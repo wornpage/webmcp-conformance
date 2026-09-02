@@ -4,6 +4,7 @@
   "description": "Framework-neutral validation and reporting for page-owned WebMCP tool catalogs.",
   "type": "module",
   "private": true,
+  "license": "MIT",
   "bin": {
     "webmcp-conformance": "./src/cli.mjs"
   },
@@ -15,7 +16,8 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.mjs integration/*.test.mjs",
+    "test:portable": "node --test test/*.test.mjs",
     "check": "node --check src/cli.mjs && node src/cli.mjs validate ../../fixtures/afterlist.json ../../fixtures/projects-extension.json"
   },
   "engines": {

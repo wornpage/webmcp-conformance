@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable:
+    name: Portable gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run portable tests
+        run: npm run test:portable
+
+      - name: Validate packages and manifests
+        run: npm run check
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=low
+
+      - name: Verify core package contents
+        working-directory: packages/webmcp-conformance
+        run: npm pack --dry-run --json
+
+      - name: Verify discovery-host package contents
+        working-directory: packages/webmcp-discovery-host
+        run: npm pack --dry-run --json

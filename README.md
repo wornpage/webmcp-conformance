@@ -16,8 +16,17 @@ authority classification.
 
 ```powershell
 npm test
+npm run test:portable
 npm run check
 ```
+
+`npm test` is the complete local gate. It includes exact source binding and
+runtime contracts for sibling Afterlist and Projects extension checkouts.
+
+`npm run test:portable` is the public GitHub Actions gate. It runs every
+self-contained package test but deliberately does not claim source binding to
+Afterlist, which does not yet have a GitHub checkout. Fixture revision changes
+must still pass the complete local gate before review.
 
 The checked-in fixtures snapshot Afterlist and the Projects WebMCP extension;
 neither source application is modified by this workspace.
@@ -28,3 +37,7 @@ The executable source-fixture tests expect `afterlist` and
 Each checkout's current Git revision must exactly match its manifest.
 The complete checkout must also be clean; tracked, staged, and untracked changes
 all fail source binding before contract modules are imported.
+
+## License
+
+MIT

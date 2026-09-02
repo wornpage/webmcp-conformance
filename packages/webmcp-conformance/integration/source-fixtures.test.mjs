@@ -15,7 +15,7 @@ const projectsRoot = path.resolve(process.env.PROJECTS_WEBMCP_EXTENSION_ROOT ?? 
 const loadManifest = async (name) => JSON.parse(await readFile(new URL(`../../../fixtures/${name}.json`, import.meta.url), 'utf8'));
 const sourceContextPromise = loadSourceContext();
 
-test('source fixtures are bound to the checked-out Git revisions', async () => {
+test('exact source fixtures are bound to the checked-out Git revisions', async () => {
   const context = await sourceContextPromise;
   assert.equal(context.afterlistBinding.clean, true);
   assert.equal(context.projectsBinding.clean, true);
