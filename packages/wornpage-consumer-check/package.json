@@ -1,0 +1,27 @@
+{
+  "name": "@webmcp-conformance/wornpage-consumer-check",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Verify immutable Wornpage component delivery in a Svelte consumer.",
+  "bin": {
+    "wornpage-consumer-check": "./bin/wornpage-consumer-check.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./cli": "./src/cli.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "check": "node --check src/index.mjs && node --check src/cli.mjs && node --check bin/wornpage-consumer-check.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

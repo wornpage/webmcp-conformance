@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "id": "afterlist",
+  "title": "Afterlist",
+  "source": {
+    "kind": "local-git",
+    "revision": "6aa290a605bda93f3219e30b5e0883697685f5ee",
+    "paths": [
+      "src/lib/afterlist-webmcp.mjs",
+      "src/lib/webmcp.mjs"
+    ]
+  },
+  "lifecycle": {
+    "unsupportedNoop": true,
+    "sharedAbortSignal": true,
+    "abortAllOnFailure": true,
+    "cleanupIdempotent": true,
+    "staleCleanupIsolation": true
+  },
+  "pages": [
+    {
+      "path": "/",
+      "tools": [
+        {
+          "descriptor": {
+            "name": "get_current_afterlist",
+            "title": "Get current Afterlist view",
+            "description": "Read the current local Afterlist view and explicit source, track, triage, review, and destination counts. Raw imports, notes, and trails are omitted.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "reader",
+          "expectedAuthority": "read-only",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [],
+            "denominatorFields": [
+              "counts.sources",
+              "counts.tracks",
+              "counts.triaged",
+              "counts.untriaged",
+              "counts.destinations",
+              "counts.needsReview"
+            ],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "view",
+              "counts"
+            ],
+            "focusFields": [],
+            "allowNull": false
+          }
+        },
+        {
+          "descriptor": {
+            "name": "show_afterlist_view",
+            "title": "Show Afterlist view",
+            "description": "Show one existing Afterlist view through the same visible navigation used by the person. This cannot import, edit, delete, fetch, or export data.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "inbox",
+                    "sources",
+                    "tracks",
+                    "destinations",
+                    "import"
+                  ]
+                }
+              },
+              "required": [
+                "view"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            }
+          },
+          "declaredEffect": "presentation",
+          "expectedAuthority": "closed-world-change",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [
+              "view",
+              "focus"
+            ],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [
+              "target",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "denominatorFields": [],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "view",
+              "changed",
+              "focus"
+            ],
+            "focusFields": [
+              "target",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "allowNull": false
+          }
+        }
+      ]
+    }
+  ]
+}

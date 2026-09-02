@@ -1,0 +1,712 @@
+{
+  "version": 1,
+  "id": "projects-extension",
+  "title": "Projects WebMCP extension",
+  "source": {
+    "kind": "git",
+    "repository": "https://github.com/wornpage/projects-webmcp-extension.git",
+    "revision": "b863db8a65ab4dce1c9fc10e4836c63e8ec6fc9a",
+    "paths": [
+      "svelte-frontend/src/lib/webmcp.mjs",
+      "svelte-frontend/src/routes/webmcp-challenge/webmcp-challenge-webmcp.mjs",
+      "svelte-frontend/src/routes/work/work-webmcp.mjs",
+      "svelte-frontend/src/routes/review/review-webmcp.mjs",
+      "svelte-frontend/src/routes/next/next-webmcp.mjs",
+      "svelte-frontend/src/routes/priority/priority-webmcp.mjs"
+    ]
+  },
+  "lifecycle": {
+    "unsupportedNoop": true,
+    "sharedAbortSignal": true,
+    "abortAllOnFailure": true,
+    "cleanupIdempotent": true,
+    "staleCleanupIsolation": true
+  },
+  "pages": [
+    {
+      "path": "/webmcp-challenge",
+      "tools": [
+        {
+          "descriptor": {
+            "name": "get_projects_handoff_guide",
+            "title": "Get Projects handoff guide",
+            "description": "Read the current Projects handoff guide, including its editable browser-agent brief, discovered Work scopes with exact denominators, selected Work-search query, three workflow routes, and visible authority boundaries. This does not navigate, fetch, or write.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "reader",
+          "expectedAuthority": "read-only",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [],
+            "denominatorFields": [
+              "workScope.workspaceCount",
+              "workScope.visibleCount",
+              "workScope.discoveredChoiceCount",
+              "workScope.shownChoiceCount",
+              "workScope.omittedChoiceCount"
+            ],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "title",
+              "purpose",
+              "steps",
+              "safety",
+              "agentBrief",
+              "workQuery",
+              "workScope"
+            ],
+            "focusFields": [],
+            "allowNull": false
+          }
+        }
+      ]
+    },
+    {
+      "path": "/work",
+      "tools": [
+        {
+          "descriptor": {
+            "name": "get_current_work_view",
+            "title": "Get current Work view",
+            "description": "Read the exact filtered, sorted, density-aware, and bounded work-item view currently rendered on Work, including explicit workspace, matching, shown, and remaining counts plus the rendered decision recommendation when one is visible.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "reader",
+          "expectedAuthority": "read-only",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [],
+            "denominatorFields": [
+              "counts.workspace",
+              "counts.matching",
+              "counts.shown",
+              "counts.remaining",
+              "counts.blocked"
+            ],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "scope",
+              "counts",
+              "recommendation",
+              "items"
+            ],
+            "focusFields": [],
+            "allowNull": false
+          }
+        },
+        {
+          "descriptor": {
+            "name": "show_work_search",
+            "title": "Show Work search",
+            "description": "Set only Work's visible text search, preserving every other active page filter. This changes page-local presentation, focuses the first result or search field, and never modifies workspace data.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Text to show in Work search. Use an empty string to clear it."
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "presentation",
+          "expectedAuthority": "closed-world-change",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [
+              "work-search",
+              "focus"
+            ],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [
+              "target",
+              "itemId",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "denominatorFields": [
+              "counts.workspace",
+              "counts.matching",
+              "counts.shown",
+              "counts.remaining",
+              "counts.blocked"
+            ],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "changed",
+              "query",
+              "focus",
+              "work"
+            ],
+            "focusFields": [
+              "target",
+              "itemId",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "allowNull": false
+          }
+        },
+        {
+          "descriptor": {
+            "name": "create_work_drafts",
+            "title": "Create draft work items",
+            "description": "Create one to 3 browser-local work items atomically in Draft status. This changes the visible workspace but cannot start, block, complete, or delete work; a person must use the existing visible controls to act on every draft.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "expectedWorkspaceCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Exact workspace count returned by the latest Work reader."
+                },
+                "drafts": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "Required work title."
+                      },
+                      "owner": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "area": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "type": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "due": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "energy": {
+                        "type": "string",
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                        ]
+                      },
+                      "recurrence": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "proofTarget": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    },
+                    "required": [
+                      "title"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "expectedWorkspaceCount",
+                "drafts"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "local-draft",
+          "expectedAuthority": "closed-world-change",
+          "allowedEffects": {
+            "domain": [
+              "draft-work-items"
+            ],
+            "ui": [
+              "workspace",
+              "activity",
+              "focus"
+            ],
+            "durable": [
+              "browser-local-workspace"
+            ],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [
+              "id",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "denominatorFields": [
+              "workspaceBefore",
+              "workspaceAfter"
+            ],
+            "humanGate": true
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "created",
+              "workspaceBefore",
+              "workspaceAfter",
+              "workspaceChanged",
+              "requiresHumanStart",
+              "focus"
+            ],
+            "focusFields": [
+              "id",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "allowNull": false
+          }
+        }
+      ]
+    },
+    {
+      "path": "/review",
+      "tools": [
+        {
+          "descriptor": {
+            "name": "get_current_review_queue",
+            "title": "Get current review queue",
+            "description": "Read the bounded work queue currently rendered on Review, including explicit total, filtered, shown, and remaining counts.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "reader",
+          "expectedAuthority": "read-only",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [],
+            "denominatorFields": [
+              "counts.totalReview",
+              "counts.searchMatches",
+              "counts.filtered",
+              "counts.shown",
+              "counts.remaining",
+              "counts.blocked",
+              "counts.missingNext",
+              "counts.missingOwner"
+            ],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "scope",
+              "availableFilters",
+              "counts",
+              "upNext",
+              "items"
+            ],
+            "focusFields": [],
+            "allowNull": false
+          }
+        },
+        {
+          "descriptor": {
+            "name": "set_review_scope",
+            "title": "Set review scope",
+            "description": "Set Review's page-local search and queue filter. This changes only the current page scope and does not modify workspace data.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Search text. Use an empty string to clear the search."
+                },
+                "filter": {
+                  "type": "string",
+                  "enum": [
+                    "all",
+                    "blocked",
+                    "missing-next",
+                    "owner-gap"
+                  ],
+                  "description": "Review queue subfilter."
+                }
+              },
+              "required": [
+                "query",
+                "filter"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "presentation",
+          "expectedAuthority": "closed-world-change",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [
+              "review-search",
+              "review-filter",
+              "focus"
+            ],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [
+              "target",
+              "itemId",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "denominatorFields": [
+              "counts.totalReview",
+              "counts.searchMatches",
+              "counts.filtered",
+              "counts.shown",
+              "counts.remaining",
+              "counts.blocked",
+              "counts.missingNext",
+              "counts.missingOwner"
+            ],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "changed",
+              "focus",
+              "review"
+            ],
+            "focusFields": [
+              "target",
+              "itemId",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "allowNull": false
+          }
+        }
+      ]
+    },
+    {
+      "path": "/next",
+      "tools": [
+        {
+          "descriptor": {
+            "name": "get_current_next_editor",
+            "title": "Get current Next editor",
+            "description": "Read the exact current work item, visible Decision Workspace context when present, choices, unsaved editor, and preview shown on Next. This does not change or save the editor.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "reader",
+          "expectedAuthority": "read-only",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [],
+            "denominatorFields": [],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "work",
+              "decisionContext",
+              "presetChoices",
+              "editor",
+              "preview",
+              "preparationReceipt",
+              "canSave",
+              "busy",
+              "staleReason"
+            ],
+            "focusFields": [],
+            "allowNull": false
+          }
+        },
+        {
+          "descriptor": {
+            "name": "prepare_next_action",
+            "title": "Prepare next-action preview",
+            "description": "Prepare a durable browser-local pending next-action draft from one to three exact Work or Review facts. The page rejects stale or mismatched facts, generates the visible evidence note from the verified values, and never saves or writes workspace data fields. A person must later approve the draft; failed or aborted preparation restores its prior pending draft state.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "choice": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Preset label or custom next action to preview."
+                },
+                "expectedMode": {
+                  "type": "string",
+                  "enum": [
+                    "preset",
+                    "custom"
+                  ],
+                  "description": "Editor mode returned by the latest current-editor read."
+                },
+                "expectedChoice": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "description": "Editor choice returned by the latest current-editor read."
+                },
+                "evidence": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 3,
+                  "description": "Exact facts previously read from Work or Review. At least one fact must reference the current work item.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "workId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Exact work item id returned by Work or Review."
+                      },
+                      "field": {
+                        "type": "string",
+                        "enum": [
+                          "workflow",
+                          "blocker"
+                        ],
+                        "description": "Exact projected field being cited."
+                      },
+                      "expectedValue": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Exact field value returned by Work or Review; null is the canonical absent blocker."
+                      }
+                    },
+                    "required": [
+                      "workId",
+                      "field",
+                      "expectedValue"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "choice",
+                "expectedMode",
+                "expectedChoice",
+                "evidence"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "local-draft",
+          "expectedAuthority": "closed-world-change",
+          "allowedEffects": {
+            "domain": [
+              "pending-next-action"
+            ],
+            "ui": [
+              "next-editor",
+              "preparation-receipt",
+              "focus"
+            ],
+            "durable": [
+              "browser-local-pending-next-action"
+            ],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [
+              "id",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "denominatorFields": [],
+            "humanGate": true
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "changed",
+              "focus",
+              "next"
+            ],
+            "focusFields": [
+              "id",
+              "focused",
+              "focusVisible",
+              "inViewport",
+              "pulsed"
+            ],
+            "allowNull": false
+          }
+        }
+      ]
+    },
+    {
+      "path": "/priority",
+      "tools": [
+        {
+          "descriptor": {
+            "name": "get_next_recommendation",
+            "title": "Get next recommendation",
+            "description": "Read the exact next recommendation currently visible on Priority. Returns only its id, title, href, and reason; this does not navigate, fetch, or write.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "untrustedContentHint": true
+            }
+          },
+          "declaredEffect": "reader",
+          "expectedAuthority": "read-only",
+          "allowedEffects": {
+            "domain": [],
+            "ui": [],
+            "durable": [],
+            "network": [],
+            "humanActivations": []
+          },
+          "evidence": {
+            "focusFields": [],
+            "denominatorFields": [],
+            "humanGate": false
+          },
+          "receiptAllowlist": {
+            "resultFields": [
+              "id",
+              "title",
+              "href",
+              "reason"
+            ],
+            "focusFields": [],
+            "allowNull": true
+          }
+        }
+      ]
+    }
+  ]
+}

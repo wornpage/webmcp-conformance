@@ -1,0 +1,16 @@
+{
+  "name": "webmcp-conformance-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "check": "npm run check --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

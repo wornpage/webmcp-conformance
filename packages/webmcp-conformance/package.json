@@ -1,0 +1,20 @@
+{
+  "name": "webmcp-conformance",
+  "version": "0.1.0",
+  "description": "Framework-neutral validation and reporting for page-owned WebMCP tool catalogs.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "webmcp-conformance": "./src/cli.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/cli.mjs && node src/cli.mjs validate ../../fixtures/afterlist.json ../../fixtures/projects-extension.json"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
