@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "id": "projects-extension",
   "title": "Projects WebMCP extension",
   "source": {
@@ -52,15 +52,15 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [],
-            "denominatorFields": [
+            "focusTruePaths": [],
+            "denominatorPaths": [
               "workScope.workspaceCount",
               "workScope.visibleCount",
               "workScope.discoveredChoiceCount",
               "workScope.shownChoiceCount",
               "workScope.omittedChoiceCount"
             ],
-            "humanGate": false
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -107,15 +107,15 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [],
-            "denominatorFields": [
+            "focusTruePaths": [],
+            "denominatorPaths": [
               "counts.workspace",
               "counts.matching",
               "counts.shown",
               "counts.remaining",
               "counts.blocked"
             ],
-            "humanGate": false
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -168,22 +168,20 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [
-              "target",
-              "itemId",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
+            "focusTruePaths": [
+              "focus.focused",
+              "focus.focusVisible",
+              "focus.inViewport",
+              "focus.pulsed"
             ],
-            "denominatorFields": [
-              "counts.workspace",
-              "counts.matching",
-              "counts.shown",
-              "counts.remaining",
-              "counts.blocked"
+            "denominatorPaths": [
+              "work.counts.workspace",
+              "work.counts.matching",
+              "work.counts.shown",
+              "work.counts.remaining",
+              "work.counts.blocked"
             ],
-            "humanGate": false
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -301,18 +299,19 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [
-              "id",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
+            "focusTruePaths": [
+              "focus.focused",
+              "focus.focusVisible",
+              "focus.inViewport",
+              "focus.pulsed"
             ],
-            "denominatorFields": [
+            "denominatorPaths": [
               "workspaceBefore",
               "workspaceAfter"
             ],
-            "humanGate": true
+            "humanGateTruePaths": [
+              "requiresHumanStart"
+            ]
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -364,8 +363,8 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [],
-            "denominatorFields": [
+            "focusTruePaths": [],
+            "denominatorPaths": [
               "counts.totalReview",
               "counts.searchMatches",
               "counts.filtered",
@@ -375,7 +374,7 @@
               "counts.missingNext",
               "counts.missingOwner"
             ],
-            "humanGate": false
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -441,25 +440,23 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [
-              "target",
-              "itemId",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
+            "focusTruePaths": [
+              "focus.focused",
+              "focus.focusVisible",
+              "focus.inViewport",
+              "focus.pulsed"
             ],
-            "denominatorFields": [
-              "counts.totalReview",
-              "counts.searchMatches",
-              "counts.filtered",
-              "counts.shown",
-              "counts.remaining",
-              "counts.blocked",
-              "counts.missingNext",
-              "counts.missingOwner"
+            "denominatorPaths": [
+              "review.counts.totalReview",
+              "review.counts.searchMatches",
+              "review.counts.filtered",
+              "review.counts.shown",
+              "review.counts.remaining",
+              "review.counts.blocked",
+              "review.counts.missingNext",
+              "review.counts.missingOwner"
             ],
-            "humanGate": false
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -509,9 +506,9 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [],
-            "denominatorFields": [],
-            "humanGate": false
+            "focusTruePaths": [],
+            "denominatorPaths": [],
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -634,15 +631,16 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [
-              "id",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
+            "focusTruePaths": [
+              "focus.focused",
+              "focus.focusVisible",
+              "focus.inViewport",
+              "focus.pulsed"
             ],
-            "denominatorFields": [],
-            "humanGate": true
+            "denominatorPaths": [],
+            "humanGateTruePaths": [
+              "next.preparationReceipt.requiresHumanSave"
+            ]
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -691,9 +689,9 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [],
-            "denominatorFields": [],
-            "humanGate": false
+            "focusTruePaths": [],
+            "denominatorPaths": [],
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [

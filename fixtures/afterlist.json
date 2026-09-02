@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "id": "afterlist",
   "title": "Afterlist",
   "source": {
@@ -47,8 +47,8 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [],
-            "denominatorFields": [
+            "focusTruePaths": [],
+            "denominatorPaths": [
               "counts.sources",
               "counts.tracks",
               "counts.triaged",
@@ -56,7 +56,7 @@
               "counts.destinations",
               "counts.needsReview"
             ],
-            "humanGate": false
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [
@@ -111,15 +111,14 @@
             "humanActivations": []
           },
           "evidence": {
-            "focusFields": [
-              "target",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
+            "focusTruePaths": [
+              "focus.focused",
+              "focus.focusVisible",
+              "focus.inViewport",
+              "focus.pulsed"
             ],
-            "denominatorFields": [],
-            "humanGate": false
+            "denominatorPaths": [],
+            "humanGateTruePaths": []
           },
           "receiptAllowlist": {
             "resultFields": [

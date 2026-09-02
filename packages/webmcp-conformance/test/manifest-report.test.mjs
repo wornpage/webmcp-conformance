@@ -34,6 +34,40 @@ test('manifest validation catches duplicate tools, authority drift, and undeclar
   assert.ok(codes.includes('receipt.focus_parent'));
 });
 
+test('manifest v2 rejects v1 and cross-checks executable evidence against receipts', async () => {
+  const [afterlist, projects] = await loadFixtures();
+  const legacy = structuredClone(afterlist);
+  legacy.version = 1;
+  assert.ok(validateCatalogManifest(legacy).issues.some(({ code }) => code === 'manifest.version'));
+
+  const mismatchedFocus = structuredClone(afterlist);
+  mismatchedFocus.pages[0].tools[1].evidence.focusTruePaths = ['focus.focused'];
+  assert.ok(validateCatalogManifest(mismatchedFocus).issues.some(({ code }) => code === 'evidence.focus_proof'));
+
+  const outsideReceipt = structuredClone(afterlist);
+  outsideReceipt.pages[0].tools[0].evidence.denominatorPaths = ['hidden.total'];
+  assert.ok(validateCatalogManifest(outsideReceipt).issues.some(({ code }) => code === 'evidence.receipt_root'));
+
+  const missingHumanGate = structuredClone(projects);
+  const drafts = missingHumanGate.pages.flatMap(({ tools }) => tools).find(({ descriptor }) => descriptor.name === 'create_work_drafts');
+  drafts.evidence.humanGateTruePaths = [];
+  assert.ok(validateCatalogManifest(missingHumanGate).issues.some(({ code }) => code === 'evidence.human_gate'));
+
+  const substitutedHumanGate = structuredClone(projects);
+  const substitutedDrafts = substitutedHumanGate.pages.flatMap(({ tools }) => tools).find(({ descriptor }) => descriptor.name === 'create_work_drafts');
+  substitutedDrafts.evidence.humanGateTruePaths = ['focus.focused'];
+  const substitutedCodes = validateCatalogManifest(substitutedHumanGate).issues.map(({ code }) => code);
+  assert.ok(substitutedCodes.includes('evidence.human_gate_path'));
+  assert.ok(substitutedCodes.includes('evidence.overlap'));
+
+  const focuslessPresentation = structuredClone(afterlist);
+  const presenter = focuslessPresentation.pages[0].tools[1];
+  presenter.evidence.focusTruePaths = [];
+  presenter.receiptAllowlist.resultFields = presenter.receiptAllowlist.resultFields.filter((field) => field !== 'focus');
+  presenter.receiptAllowlist.focusFields = [];
+  assert.ok(validateCatalogManifest(focuslessPresentation).issues.some(({ code }) => code === 'evidence.focus_proof'));
+});
+
 test('catalog reporting is deterministic and preserves declared effects', async () => {
   const report = buildCatalogReport(await loadFixtures());
   assert.deepEqual(report.summary, {

@@ -4,43 +4,58 @@ import { snapshotToolDescriptor } from './descriptor.mjs';
 
 /**
  * Verify runtime descriptors against a frozen manifest and execute deterministic
- * success/error cases. Product-specific state/effect assertions remain in each
- * adapter case through its optional assert callback.
+ * success/error cases. Evidence obligations are enforced for every successful
+ * result; product-specific state/effect assertions remain adapter-owned.
  *
  * @param {unknown} manifest
- * @param {{ tools: Record<string, { tool: unknown, cases: Array<{ name: string, input: unknown, expect: 'success' | 'error', assert?: (result: unknown) => unknown }> }> }} adapter
+ * @param {{ tools: Record<string, { tool: unknown, cases: Array<{ name: string, input: unknown, expect: 'success' | 'error', expectedError?: { name: string, message: string }, assert?: (result: unknown) => unknown, assertAfterError?: (error: Error) => unknown }> }> }} adapter
  */
 export async function runExecutableCatalogFixture(manifest, adapter) {
   assertValidCatalogManifest(manifest);
   if (!adapter || typeof adapter !== 'object' || !adapter.tools || typeof adapter.tools !== 'object') {
     throw new TypeError('Executable fixture requires a tools adapter.');
   }
-  const results = [];
+  const plans = [];
   for (const page of manifest.pages) {
     for (const entry of page.tools) {
       const name = entry.descriptor.name;
       const runtime = adapter.tools[name];
-      if (!runtime || typeof runtime !== 'object' || !runtime.tool || typeof runtime.tool.execute !== 'function' || !Array.isArray(runtime.cases) || runtime.cases.length === 0) {
+      if (!runtime || typeof runtime !== 'object' || !runtime.tool || typeof runtime.tool.execute !== 'function' || !Array.isArray(runtime.cases)) {
         throw new TypeError(`Executable fixture is missing runtime cases for ${name}.`);
       }
+      validateRuntimeCases(runtime.cases, name);
       const actualDescriptor = snapshotToolDescriptor(runtime.tool);
       if (!isDeepStrictEqual(actualDescriptor, entry.descriptor)) throw new TypeError(`Runtime descriptor drifted from manifest for ${name}.`);
+      plans.push({ entry, name, runtime });
+    }
+  }
 
-      for (const testCase of runtime.cases) {
-        if (!testCase || typeof testCase.name !== 'string' || !['success', 'error'].includes(testCase.expect)) {
-          throw new TypeError(`Executable fixture case is invalid for ${name}.`);
-        }
-        try {
-          const result = await runtime.tool.execute(structuredClone(testCase.input));
-          if (testCase.expect === 'error') throw new FixtureExpectationError(`${name}/${testCase.name} unexpectedly succeeded.`);
+  const results = [];
+  for (const expectedOutcome of ['error', 'success']) {
+    for (const { entry, name, runtime } of plans) {
+      for (const testCase of runtime.cases.filter(({ expect }) => expect === expectedOutcome)) {
+        const input = structuredClone(testCase.input);
+        if (testCase.expect === 'success') {
+          const result = await runtime.tool.execute(input);
           assertReceiptAllowlist(result, entry.receiptAllowlist, name);
+          assertEvidenceObligations(result, entry.evidence, name);
           await testCase.assert?.(result);
           results.push({ tool: name, case: testCase.name, outcome: 'success' });
-        } catch (error) {
-          if (error instanceof FixtureExpectationError) throw error;
-          if (testCase.expect !== 'error') throw error;
-          results.push({ tool: name, case: testCase.name, outcome: 'error' });
+          continue;
         }
+
+        let didThrow = false;
+        let thrown;
+        try {
+          await runtime.tool.execute(input);
+        } catch (error) {
+          didThrow = true;
+          thrown = error;
+        }
+        if (!didThrow) throw new FixtureExpectationError(`${name}/${testCase.name} unexpectedly succeeded.`);
+        assertExpectedError(thrown, testCase.expectedError, `${name}/${testCase.name}`);
+        await testCase.assertAfterError(thrown);
+        results.push({ tool: name, case: testCase.name, outcome: 'error' });
       }
     }
   }
@@ -59,6 +74,21 @@ export function assertReceiptAllowlist(result, allowlist, label = 'tool') {
   return result;
 }
 
+/** @param {unknown} result @param {{ focusTruePaths: string[], denominatorPaths: string[], humanGateTruePaths: string[] }} evidence @param {string} [label] */
+export function assertEvidenceObligations(result, evidence, label = 'tool') {
+  for (const resultPath of evidence.focusTruePaths) {
+    if (readResultPath(result, resultPath, label) !== true) throw new TypeError(`${label} focus proof ${resultPath} must be true.`);
+  }
+  for (const resultPath of evidence.denominatorPaths) {
+    const value = readResultPath(result, resultPath, label);
+    if (!Number.isSafeInteger(value) || value < 0) throw new TypeError(`${label} denominator ${resultPath} must be a non-negative safe integer.`);
+  }
+  for (const resultPath of evidence.humanGateTruePaths) {
+    if (readResultPath(result, resultPath, label) !== true) throw new TypeError(`${label} human gate ${resultPath} must be true.`);
+  }
+  return result;
+}
+
 /**
  * Exercise the lifecycle obligations shared by page-owned registration
  * helpers without depending on a browser framework.
@@ -68,7 +98,7 @@ export function assertReceiptAllowlist(result, allowlist, label = 'tool') {
  */
 export async function runRegistrationLifecycleFixture(register, obligations) {
   if (typeof register !== 'function') throw new TypeError('Lifecycle fixture requires a registration function.');
-  const tools = ['fixture_alpha', 'fixture_beta'].map((name) => ({
+  const tools = ['fixture_alpha', 'fixture_beta', 'fixture_gamma'].map((name) => ({
     name,
     title: name,
     description: `${name} lifecycle fixture`,
@@ -125,10 +155,12 @@ export async function runRegistrationLifecycleFixture(register, obligations) {
 async function assertRegistrationFailureAborts(register, tools, mode) {
   const signals = [];
   const errors = [];
+  const attempted = [];
   const failure = new Error(`${mode} fixture failure`);
   const documentRef = {
     modelContext: {
       registerTool(tool, options) {
+        attempted.push(tool.name);
         signals.push(options?.signal);
         if (tool.name === tools[1].name) {
           if (mode === 'sync') throw failure;
@@ -139,10 +171,69 @@ async function assertRegistrationFailureAborts(register, tools, mode) {
   };
   const cleanup = register(documentRef, tools, { onError(error, name) { errors.push({ error, name }); } });
   await new Promise((resolve) => setImmediate(resolve));
-  if (signals.length !== tools.length || signals.some((signal) => !signal.aborted) || errors.length !== 1 || errors[0].name !== tools[1].name) {
+  const expectedAttempts = mode === 'sync' ? tools.slice(0, 2).map(({ name }) => name) : tools.map(({ name }) => name);
+  if (!isDeepStrictEqual(attempted, expectedAttempts) || signals.some((signal) => !signal.aborted) || errors.length !== 1 || errors[0].name !== tools[1].name) {
     throw new TypeError(`${mode} registration failure did not abort the full page catalog exactly once.`);
   }
   cleanup();
+}
+
+function validateRuntimeCases(cases, name) {
+  const names = [];
+  let successes = 0;
+  let errors = 0;
+  for (const testCase of cases) {
+    if (!testCase || typeof testCase.name !== 'string' || !testCase.name || !['success', 'error'].includes(testCase.expect)) {
+      throw new TypeError(`Executable fixture case is invalid for ${name}.`);
+    }
+    names.push(testCase.name);
+    if (testCase.expect === 'success') {
+      successes += 1;
+      if (testCase.expectedError !== undefined || testCase.assertAfterError !== undefined) {
+        throw new TypeError(`Successful fixture case ${name}/${testCase.name} cannot declare expected-error handling.`);
+      }
+    } else {
+      errors += 1;
+      validateExpectedError(testCase.expectedError, `${name}/${testCase.name}`);
+      if (typeof testCase.assertAfterError !== 'function') throw new TypeError(`Expected-error case ${name}/${testCase.name} requires an effect postcondition.`);
+    }
+  }
+  if (new Set(names).size !== names.length) throw new TypeError(`Executable fixture case names must be unique for ${name}.`);
+  if (successes === 0 || errors === 0) throw new TypeError(`Executable fixture requires at least one success and one expected-error case for ${name}.`);
+}
+
+function validateExpectedError(specification, label) {
+  if (!specification || typeof specification !== 'object' || Array.isArray(specification)) {
+    throw new TypeError(`Expected-error case ${label} requires an explicit matcher.`);
+  }
+  if (
+    Object.keys(specification).length !== 2 ||
+    typeof specification.name !== 'string' || !specification.name ||
+    typeof specification.message !== 'string' || !specification.message
+  ) {
+    throw new TypeError(`Expected-error case ${label} must declare exact non-empty name and message strings.`);
+  }
+}
+
+function assertExpectedError(error, specification, label) {
+  if (!(error instanceof Error) || error.name !== specification.name || error.message !== specification.message) {
+    const actualName = error instanceof Error ? error.name : typeof error;
+    const actualMessage = error instanceof Error ? error.message : String(error);
+    throw new FixtureExpectationError(
+      `${label} threw ${actualName} ${JSON.stringify(actualMessage)}, expected ${specification.name} ${JSON.stringify(specification.message)}.`,
+    );
+  }
+}
+
+function readResultPath(result, resultPath, label) {
+  let current = result;
+  for (const segment of resultPath.split('.')) {
+    if (!current || typeof current !== 'object' || Array.isArray(current) || !Object.hasOwn(current, segment)) {
+      throw new TypeError(`${label} evidence path ${resultPath} is missing.`);
+    }
+    current = current[segment];
+  }
+  return current;
 }
 
 function assertExactKeys(value, allowed, label) {

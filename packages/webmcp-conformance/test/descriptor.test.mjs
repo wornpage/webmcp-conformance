@@ -67,6 +67,66 @@ test('rejects malformed and contradictory descriptor data deterministically', ()
   ]);
 });
 
+test('requires closed objects recursively through array items and compositions', () => {
+  const value = descriptor();
+  value.inputSchema.properties = {
+    entries: {
+      type: 'array',
+      items: {
+        anyOf: [
+          { type: 'string' },
+          { type: 'object', properties: { label: { type: 'string' } } },
+        ],
+      },
+    },
+  };
+  const result = validateToolDescriptor(value);
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.issues.filter(({ code }) => code === 'schema.closed_object'), [{
+    path: '$.inputSchema.properties.entries.items.anyOf[1].additionalProperties',
+    code: 'schema.closed_object',
+    message: 'Every object schema must set additionalProperties to false.',
+  }]);
+});
+
+test('rejects schema escape hatches outside the recursively closed subset', () => {
+  const escapes = [
+    { property: { $ref: '#/$defs/Open' }, root: { $defs: { Open: { type: 'object', properties: {} } } } },
+    { property: { $ref: '#/definitions/Open' }, root: { definitions: { Open: { type: 'object', properties: {} } } } },
+    { property: { required: ['secret'] } },
+    { property: {} },
+    { property: true },
+    { property: { if: { type: 'string' }, then: { type: 'object', properties: {} } } },
+    { property: { type: 'object', properties: {}, additionalProperties: false, patternProperties: { '^x': { type: 'string' } } } },
+    { property: { type: 'array', items: { type: 'string' }, contains: { type: 'object', properties: {} } } },
+    { property: { type: 'array', items: { type: 'string' }, prefixItems: [{ type: 'object', properties: {} }] } },
+  ];
+  for (const escape of escapes) {
+    const value = descriptor();
+    value.inputSchema = {
+      type: 'object',
+      properties: { candidate: escape.property },
+      additionalProperties: false,
+      ...escape.root,
+    };
+    assert.equal(validateToolDescriptor(value).valid, false, `schema escape validated: ${JSON.stringify(escape)}`);
+  }
+});
+
+test('rejects invalid values and unsupported scalar keywords in the schema subset', () => {
+  const invalid = [
+    { type: 'integer', minimum: 'not-a-number' },
+    { type: 'number', multipleOf: 0 },
+    { type: 'string', format: { bad: true } },
+    { type: 'string', title: 7 },
+  ];
+  for (const property of invalid) {
+    const value = descriptor();
+    value.inputSchema.properties = { candidate: property };
+    assert.equal(validateToolDescriptor(value).valid, false, `invalid schema keyword validated: ${JSON.stringify(property)}`);
+  }
+});
+
 test('classifies annotation authority ceilings without reading names or descriptions', () => {
   const cases = [
     [{ readOnlyHint: true, openWorldHint: false }, 'read-only'],

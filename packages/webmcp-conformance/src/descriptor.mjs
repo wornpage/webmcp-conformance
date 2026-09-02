@@ -2,6 +2,11 @@ const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f-\u009f]/u;
 const TOOL_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/u;
 const JSON_SCHEMA_TYPES = new Set(['array', 'boolean', 'integer', 'null', 'number', 'object', 'string']);
 const AUTHORITY_ANNOTATIONS = ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'];
+const SUPPORTED_SCHEMA_KEYWORDS = new Set([
+  'additionalProperties', 'allOf', 'anyOf', 'description', 'enum', 'items', 'maxItems',
+  'maxLength', 'minItems', 'minLength', 'minimum', 'oneOf', 'pattern', 'properties',
+  'required', 'type',
+]);
 
 /**
  * Validate only the serializable WebMCP descriptor contract. The function is
@@ -101,14 +106,13 @@ function validateInputSchema(value, path, add) {
   }
   validateSchemaNode(value, path, add, new WeakSet());
   if (value.type !== 'object') add(`${path}.type`, 'schema.root_object', 'Input schema must declare type "object".');
-  if (!isRecord(value.properties)) add(`${path}.properties`, 'schema.properties', 'Input schema must declare a properties object.');
-  if (value.additionalProperties !== false) {
-    add(`${path}.additionalProperties`, 'schema.closed_object', 'Input schema must set additionalProperties to false.');
-  }
 }
 
 function validateSchemaNode(value, path, add, seen) {
-  if (typeof value === 'boolean') return;
+  if (typeof value === 'boolean') {
+    add(path, 'schema.boolean', 'Boolean schemas are not supported by the closed input contract.');
+    return;
+  }
   if (!isRecord(value)) {
     add(path, 'schema.node', 'Schema node must be an object or boolean.');
     return;
@@ -119,12 +123,29 @@ function validateSchemaNode(value, path, add, seen) {
   }
   seen.add(value);
 
+  for (const keyword of Object.keys(value).sort()) {
+    if (!SUPPORTED_SCHEMA_KEYWORDS.has(keyword)) add(`${path}.${keyword}`, 'schema.unsupported_keyword', `${keyword} is not supported by the closed input contract.`);
+  }
+
   if (value.type !== undefined) {
     const types = Array.isArray(value.type) ? value.type : [value.type];
     if (types.length === 0 || types.some((type) => typeof type !== 'string' || !JSON_SCHEMA_TYPES.has(type)) || new Set(types).size !== types.length) {
       add(`${path}.type`, 'schema.keyword', 'Schema type must contain unique supported JSON Schema types.');
     }
   }
+  const schemaTypes = Array.isArray(value.type) ? value.type : [value.type];
+  const hasComposition = ['allOf', 'anyOf', 'oneOf'].some((keyword) => Object.hasOwn(value, keyword));
+  const objectTyped = schemaTypes.includes('object') || ['properties', 'required', 'additionalProperties'].some((keyword) => Object.hasOwn(value, keyword));
+  if (value.type === undefined && !hasComposition && !objectTyped) {
+    add(path, 'schema.unconstrained', 'Schema nodes must declare a type, a supported composition, or a closed object shape.');
+  }
+  if (objectTyped) {
+    if (!isRecord(value.properties)) add(`${path}.properties`, 'schema.properties', 'Object schemas must declare a properties object.');
+    if (value.additionalProperties !== false) {
+      add(`${path}.additionalProperties`, 'schema.closed_object', 'Every object schema must set additionalProperties to false.');
+    }
+  }
+  if (schemaTypes.includes('array') && value.items === undefined) add(`${path}.items`, 'schema.array_items', 'Array schemas must declare one recursively closed items schema.');
   if (value.properties !== undefined) {
     if (!isRecord(value.properties)) {
       add(`${path}.properties`, 'schema.properties', 'properties must be an object.');
@@ -162,6 +183,9 @@ function validateSchemaNode(value, path, add, seen) {
     else {
       try { new RegExp(value.pattern, 'u'); } catch { add(`${path}.pattern`, 'schema.pattern', 'pattern must be a valid regular expression.'); }
     }
+  }
+  if (value.minimum !== undefined && (typeof value.minimum !== 'number' || !Number.isFinite(value.minimum))) {
+    add(`${path}.minimum`, 'schema.minimum', 'minimum must be a finite number.');
   }
   for (const keyword of ['minLength', 'maxLength', 'minItems', 'maxItems']) {
     if (value[keyword] !== undefined && (!Number.isSafeInteger(value[keyword]) || value[keyword] < 0)) {
