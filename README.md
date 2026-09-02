@@ -20,3 +20,8 @@ npm run check
 
 The checked-in fixtures snapshot Afterlist and the Projects WebMCP extension;
 neither source application is modified by this workspace.
+
+The executable source-fixture tests expect `afterlist` and
+`projects-webmcp-extension` beside this repository by default. Set
+`AFTERLIST_ROOT` or `PROJECTS_WEBMCP_EXTENSION_ROOT` to use another checkout.
+Each checkout's current Git revision must exactly match its manifest.

@@ -1,36 +1,59 @@
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 import {
   runExecutableCatalogFixture,
   runRegistrationLifecycleFixture,
 } from '../src/index.mjs';
-import {
+
+const execFileAsync = promisify(execFile);
+const afterlistRoot = path.resolve(process.env.AFTERLIST_ROOT ?? fileURLToPath(new URL('../../../../afterlist/', import.meta.url)));
+const projectsRoot = path.resolve(process.env.PROJECTS_WEBMCP_EXTENSION_ROOT ?? fileURLToPath(new URL('../../../../projects-webmcp-extension/', import.meta.url)));
+const afterlistContract = await importLocal(afterlistRoot, 'src/lib/afterlist-webmcp.mjs');
+const afterlistRegistration = await importLocal(afterlistRoot, 'src/lib/webmcp.mjs');
+const projectsWork = await importLocal(projectsRoot, 'svelte-frontend/src/routes/work/work-webmcp.mjs');
+const projectsReview = await importLocal(projectsRoot, 'svelte-frontend/src/routes/review/review-webmcp.mjs');
+const projectsNext = await importLocal(projectsRoot, 'svelte-frontend/src/routes/next/next-webmcp.mjs');
+const projectsPriority = await importLocal(projectsRoot, 'svelte-frontend/src/routes/priority/priority-webmcp.mjs');
+const projectsGuide = await importLocal(projectsRoot, 'svelte-frontend/src/routes/webmcp-challenge/webmcp-challenge-webmcp.mjs');
+const projectsRegistration = await importLocal(projectsRoot, 'svelte-frontend/src/lib/webmcp.mjs');
+const {
   createCurrentAfterlistTool,
   createShowAfterlistViewTool,
-} from '../../../../afterlist/src/lib/afterlist-webmcp.mjs';
-import { registerPageTools as registerAfterlistTools } from '../../../../afterlist/src/lib/webmcp.mjs';
-import {
+} = afterlistContract;
+const { registerPageTools: registerAfterlistTools } = afterlistRegistration;
+const {
   createCurrentWorkTool,
   createShowWorkSearchTool,
   createWorkDraftsTool,
-} from '../../../../projects-webmcp-extension/svelte-frontend/src/routes/work/work-webmcp.mjs';
-import {
+} = projectsWork;
+const {
   createCurrentReviewTool,
   createSetReviewScopeTool,
-} from '../../../../projects-webmcp-extension/svelte-frontend/src/routes/review/review-webmcp.mjs';
-import {
+} = projectsReview;
+const {
   NEXT_PREPARATION_RECEIPT_ID,
   NEXT_PREPARATION_SUMMARY,
   createCurrentNextEditorTool,
   createPrepareNextActionTool,
   verifiedNextEvidenceNote,
-} from '../../../../projects-webmcp-extension/svelte-frontend/src/routes/next/next-webmcp.mjs';
-import { createPriorityRecommendationTool } from '../../../../projects-webmcp-extension/svelte-frontend/src/routes/priority/priority-webmcp.mjs';
-import { createWebMcpChallengeGuideTool } from '../../../../projects-webmcp-extension/svelte-frontend/src/routes/webmcp-challenge/webmcp-challenge-webmcp.mjs';
-import { registerPageTools as registerProjectsTools } from '../../../../projects-webmcp-extension/svelte-frontend/src/lib/webmcp.mjs';
+} = projectsNext;
+const { createPriorityRecommendationTool } = projectsPriority;
+const { createWebMcpChallengeGuideTool } = projectsGuide;
+const { registerPageTools: registerProjectsTools } = projectsRegistration;
 
 const loadManifest = async (name) => JSON.parse(await readFile(new URL(`../../../fixtures/${name}.json`, import.meta.url), 'utf8'));
+
+test('source fixtures are bound to the checked-out Git revisions', async () => {
+  const [afterlist, projects] = await Promise.all([loadManifest('afterlist'), loadManifest('projects-extension')]);
+  const [afterlistRevision, projectsRevision] = await Promise.all([gitRevision(afterlistRoot), gitRevision(projectsRoot)]);
+  assert.equal(afterlistRevision, afterlist.source.revision, 'Afterlist HEAD does not match its manifest revision.');
+  assert.equal(projectsRevision, projects.source.revision, 'Projects extension HEAD does not match its manifest revision.');
+});
 
 test('Afterlist executable fixture matches source, projects receipts, and rejects undeclared presenter fields', async () => {
   const manifest = await loadManifest('afterlist');
@@ -257,4 +280,13 @@ function guideView() {
       selected: { id: 'all', kind: 'all', label: 'All visible work', query: '', matchingCount: 0 },
     },
   };
+}
+
+function importLocal(root, relativePath) {
+  return import(pathToFileURL(path.join(root, ...relativePath.split('/'))).href);
+}
+
+async function gitRevision(root) {
+  const { stdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
+  return stdout.trim();
 }

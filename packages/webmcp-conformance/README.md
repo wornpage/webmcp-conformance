@@ -60,4 +60,7 @@ cleanup, and stale-cleanup isolation.
 
 The JSON manifests are snapshots of named Git revisions. They do not import,
 wrap, or change either source application. Updating a fixture requires a new
-source revision and an executable source-contract test.
+source revision and an executable source-contract test. The workspace's source
+fixture test also resolves each configured checkout and requires its `HEAD` to
+equal the manifest revision; `AFTERLIST_ROOT` and
+`PROJECTS_WEBMCP_EXTENSION_ROOT` override the default sibling paths.
