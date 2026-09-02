@@ -17,7 +17,9 @@ test('CLI validates fixtures and emits deterministic JSON catalog output', () =>
   const catalog = run(['catalog', '--json', afterlist, projects]);
   assert.equal(catalog.status, 0);
   const report = JSON.parse(catalog.stdout);
-  assert.deepEqual(report.summary.byDeclaredEffect, { 'local-draft': 2, presentation: 3, reader: 6 });
+  assert.deepEqual(report.summary.byDiscoveryClassification, { 'change-unknown': 5, 'read-only-hint': 6 });
+  assert.deepEqual(report.summary.byProjectPolicyEffect, { 'local-draft': 2, presentation: 3, reader: 6 });
+  assert.deepEqual(report.summary.byProjectPolicyInputSchemaProfile, { 'closed-bounded-v1': 11 });
 });
 
 test('CLI distinguishes validation failures from incorrect usage', async () => {

@@ -10,21 +10,20 @@ grant authority to a tool.
 
 | Layer | Question answered |
 |---|---|
-| Descriptor | Is the tool name, recursively closed input schema, and annotation set explicit and serializable? |
-| Authority ceiling | What do the standard annotations permit: read, closed-world change, open-world access, or destruction? |
-| Declared effect | What does the product say the tool actually does: read, change presentation, or prepare a local draft? |
+| Standard descriptor | Does the tool use the current name grammar, required name/description, optional title/schema, and only `readOnlyHint` / `untrustedContentHint`? |
+| Discovery classification | Is the site-authored standard hint `read-only-hint` or conservatively `change-unknown`? |
+| Project policy | Which explicitly nonstandard destructive/idempotent/open-world declarations, ceiling, and effect does this project verify? |
 | Receipt allowlist | Which exact top-level and focus fields may leave the tool? |
 | Evidence | Which full result-relative focus, denominator, and human-gate paths must the runner prove? |
 | Lifecycle | Which whole-page registration properties must the registration owner satisfy? |
 
-Authority classification is intentionally coarse. Both a page-local search
-setter and a browser-local draft creator have a `closed-world-change` ceiling;
-their separate `declaredEffect` and `allowedEffects` entries explain the
-meaningful difference.
+Standard discovery classification never reads names, descriptions, schemas, or
+project-only declarations. Project-policy ceilings and effects are reported in
+a separate namespace and are not presented as WebMCP standard authority.
 
-Catalog manifests use schema version `2`. Version `1` is rejected because its
-evidence declarations were metadata-only. In version `2`, every successful
-case must prove:
+Catalog manifests use schema version `3`; version `2` is rejected. Version `3`
+separates official descriptor data from `projectPolicy`. Within project policy,
+every successful case must prove:
 
 - `focusTruePaths` exist as own properties and equal `true`;
 - `denominatorPaths` exist as non-negative safe integers; and
@@ -34,7 +33,10 @@ Focus receipts must expose all four proof flags: `focused`, `focusVisible`,
 `inViewport`, and `pulsed`. Local-draft tools must declare at least one explicit
 `requiresHuman…` gate path, disjoint from focus and denominator evidence.
 
-Input schemas use a deliberately bounded JSON Schema subset. Every accepted
+The standard descriptor accepts an optional serializable object schema without
+claiming that the project's subset is WebMCP standard. The explicit
+`projectPolicy.inputSchemaProfile: closed-bounded-v1` applies a deliberately
+bounded JSON Schema subset. Every accepted
 node declares a type, a supported composition, or a closed object shape; arrays
 declare `items`; and every object shape declares `properties` plus
 `additionalProperties: false`. Boolean schemas, references, conditionals, and
@@ -58,13 +60,21 @@ The catalog report is sorted by catalog, page, and tool for deterministic diffs.
 ```js
 import {
   assertExactGitSourceCheckout,
-  classifyAuthority,
+  assertInputAgainstClosedSchema,
+  classifyProjectPolicyCeiling,
+  classifyWebMcpDiscoveryHint,
   runExecutableCatalogFixture,
   runRegistrationLifecycleFixture,
   validateCatalogManifest,
-  validateToolDescriptor,
+  validateWebMcpDescriptor,
 } from 'webmcp-conformance';
 ```
+
+`assertInputAgainstClosedSchema` is the shared runtime input owner. It rejects
+accessors, custom prototypes, symbols, sparse/decorated arrays, cycles, unsafe
+regular expressions, and over-budget depth, nodes, strings, or total UTF-8
+bytes, then returns a detached canonical JSON snapshot. Consumers never freeze
+or execute the caller-owned value.
 
 `runExecutableCatalogFixture` compares each live runtime descriptor to its
 frozen snapshot and preflights every adapter before executing anything. Every

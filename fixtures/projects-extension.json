@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "id": "projects-extension",
   "title": "Projects WebMCP extension",
   "source": {
@@ -38,42 +38,48 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "reader",
-          "expectedAuthority": "read-only",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [],
-            "denominatorPaths": [
-              "workScope.workspaceCount",
-              "workScope.visibleCount",
-              "workScope.discoveredChoiceCount",
-              "workScope.shownChoiceCount",
-              "workScope.omittedChoiceCount"
-            ],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "title",
-              "purpose",
-              "steps",
-              "safety",
-              "agentBrief",
-              "workQuery",
-              "workScope"
-            ],
-            "focusFields": [],
-            "allowNull": false
+          "discoveryClassification": "read-only-hint",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "read-only",
+            "effect": "reader",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [],
+              "denominatorPaths": [
+                "workScope.workspaceCount",
+                "workScope.visibleCount",
+                "workScope.discoveredChoiceCount",
+                "workScope.shownChoiceCount",
+                "workScope.omittedChoiceCount"
+              ],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "title",
+                "purpose",
+                "steps",
+                "safety",
+                "agentBrief",
+                "workQuery",
+                "workScope"
+              ],
+              "focusFields": [],
+              "allowNull": false
+            }
           }
         }
       ]
@@ -93,39 +99,45 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "reader",
-          "expectedAuthority": "read-only",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [],
-            "denominatorPaths": [
-              "counts.workspace",
-              "counts.matching",
-              "counts.shown",
-              "counts.remaining",
-              "counts.blocked"
-            ],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "scope",
-              "counts",
-              "recommendation",
-              "items"
-            ],
-            "focusFields": [],
-            "allowNull": false
+          "discoveryClassification": "read-only-hint",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "read-only",
+            "effect": "reader",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [],
+              "denominatorPaths": [
+                "counts.workspace",
+                "counts.matching",
+                "counts.shown",
+                "counts.remaining",
+                "counts.blocked"
+              ],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "scope",
+                "counts",
+                "recommendation",
+                "items"
+              ],
+              "focusFields": [],
+              "allowNull": false
+            }
           }
         },
         {
@@ -149,56 +161,62 @@
             },
             "annotations": {
               "readOnlyHint": false,
-              "destructiveHint": false,
-              "idempotentHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "presentation",
-          "expectedAuthority": "closed-world-change",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [
-              "work-search",
-              "focus"
-            ],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [
-              "focus.focused",
-              "focus.focusVisible",
-              "focus.inViewport",
-              "focus.pulsed"
-            ],
-            "denominatorPaths": [
-              "work.counts.workspace",
-              "work.counts.matching",
-              "work.counts.shown",
-              "work.counts.remaining",
-              "work.counts.blocked"
-            ],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "changed",
-              "query",
-              "focus",
-              "work"
-            ],
-            "focusFields": [
-              "target",
-              "itemId",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
-            ],
-            "allowNull": false
+          "discoveryClassification": "change-unknown",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "closed-world-change",
+            "effect": "presentation",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [
+                "work-search",
+                "focus"
+              ],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [
+                "focus.focused",
+                "focus.focusVisible",
+                "focus.inViewport",
+                "focus.pulsed"
+              ],
+              "denominatorPaths": [
+                "work.counts.workspace",
+                "work.counts.matching",
+                "work.counts.shown",
+                "work.counts.remaining",
+                "work.counts.blocked"
+              ],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "changed",
+                "query",
+                "focus",
+                "work"
+              ],
+              "focusFields": [
+                "target",
+                "itemId",
+                "focused",
+                "focusVisible",
+                "inViewport",
+                "pulsed"
+              ],
+              "allowNull": false
+            }
           }
         },
         {
@@ -275,61 +293,67 @@
             },
             "annotations": {
               "readOnlyHint": false,
-              "destructiveHint": false,
-              "idempotentHint": false,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "local-draft",
-          "expectedAuthority": "closed-world-change",
-          "allowedEffects": {
-            "domain": [
-              "draft-work-items"
-            ],
-            "ui": [
-              "workspace",
-              "activity",
-              "focus"
-            ],
-            "durable": [
-              "browser-local-workspace"
-            ],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [
-              "focus.focused",
-              "focus.focusVisible",
-              "focus.inViewport",
-              "focus.pulsed"
-            ],
-            "denominatorPaths": [
-              "workspaceBefore",
-              "workspaceAfter"
-            ],
-            "humanGateTruePaths": [
-              "requiresHumanStart"
-            ]
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "created",
-              "workspaceBefore",
-              "workspaceAfter",
-              "workspaceChanged",
-              "requiresHumanStart",
-              "focus"
-            ],
-            "focusFields": [
-              "id",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
-            ],
-            "allowNull": false
+          "discoveryClassification": "change-unknown",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "closed-world-change",
+            "effect": "local-draft",
+            "allowedEffects": {
+              "domain": [
+                "draft-work-items"
+              ],
+              "ui": [
+                "workspace",
+                "activity",
+                "focus"
+              ],
+              "durable": [
+                "browser-local-workspace"
+              ],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [
+                "focus.focused",
+                "focus.focusVisible",
+                "focus.inViewport",
+                "focus.pulsed"
+              ],
+              "denominatorPaths": [
+                "workspaceBefore",
+                "workspaceAfter"
+              ],
+              "humanGateTruePaths": [
+                "requiresHumanStart"
+              ]
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "created",
+                "workspaceBefore",
+                "workspaceAfter",
+                "workspaceChanged",
+                "requiresHumanStart",
+                "focus"
+              ],
+              "focusFields": [
+                "id",
+                "focused",
+                "focusVisible",
+                "inViewport",
+                "pulsed"
+              ],
+              "allowNull": false
+            }
           }
         }
       ]
@@ -349,43 +373,49 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "reader",
-          "expectedAuthority": "read-only",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [],
-            "denominatorPaths": [
-              "counts.totalReview",
-              "counts.searchMatches",
-              "counts.filtered",
-              "counts.shown",
-              "counts.remaining",
-              "counts.blocked",
-              "counts.missingNext",
-              "counts.missingOwner"
-            ],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "scope",
-              "availableFilters",
-              "counts",
-              "upNext",
-              "items"
-            ],
-            "focusFields": [],
-            "allowNull": false
+          "discoveryClassification": "read-only-hint",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "read-only",
+            "effect": "reader",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [],
+              "denominatorPaths": [
+                "counts.totalReview",
+                "counts.searchMatches",
+                "counts.filtered",
+                "counts.shown",
+                "counts.remaining",
+                "counts.blocked",
+                "counts.missingNext",
+                "counts.missingOwner"
+              ],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "scope",
+                "availableFilters",
+                "counts",
+                "upNext",
+                "items"
+              ],
+              "focusFields": [],
+              "allowNull": false
+            }
           }
         },
         {
@@ -420,59 +450,65 @@
             },
             "annotations": {
               "readOnlyHint": false,
-              "destructiveHint": false,
-              "idempotentHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "presentation",
-          "expectedAuthority": "closed-world-change",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [
-              "review-search",
-              "review-filter",
-              "focus"
-            ],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [
-              "focus.focused",
-              "focus.focusVisible",
-              "focus.inViewport",
-              "focus.pulsed"
-            ],
-            "denominatorPaths": [
-              "review.counts.totalReview",
-              "review.counts.searchMatches",
-              "review.counts.filtered",
-              "review.counts.shown",
-              "review.counts.remaining",
-              "review.counts.blocked",
-              "review.counts.missingNext",
-              "review.counts.missingOwner"
-            ],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "changed",
-              "focus",
-              "review"
-            ],
-            "focusFields": [
-              "target",
-              "itemId",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
-            ],
-            "allowNull": false
+          "discoveryClassification": "change-unknown",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "closed-world-change",
+            "effect": "presentation",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [
+                "review-search",
+                "review-filter",
+                "focus"
+              ],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [
+                "focus.focused",
+                "focus.focusVisible",
+                "focus.inViewport",
+                "focus.pulsed"
+              ],
+              "denominatorPaths": [
+                "review.counts.totalReview",
+                "review.counts.searchMatches",
+                "review.counts.filtered",
+                "review.counts.shown",
+                "review.counts.remaining",
+                "review.counts.blocked",
+                "review.counts.missingNext",
+                "review.counts.missingOwner"
+              ],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "changed",
+                "focus",
+                "review"
+              ],
+              "focusFields": [
+                "target",
+                "itemId",
+                "focused",
+                "focusVisible",
+                "inViewport",
+                "pulsed"
+              ],
+              "allowNull": false
+            }
           }
         }
       ]
@@ -492,38 +528,44 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "reader",
-          "expectedAuthority": "read-only",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [],
-            "denominatorPaths": [],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "work",
-              "decisionContext",
-              "presetChoices",
-              "editor",
-              "preview",
-              "preparationReceipt",
-              "canSave",
-              "busy",
-              "staleReason"
-            ],
-            "focusFields": [],
-            "allowNull": false
+          "discoveryClassification": "read-only-hint",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "read-only",
+            "effect": "reader",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [],
+              "denominatorPaths": [],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "work",
+                "decisionContext",
+                "presetChoices",
+                "editor",
+                "preview",
+                "preparationReceipt",
+                "canSave",
+                "busy",
+                "staleReason"
+              ],
+              "focusFields": [],
+              "allowNull": false
+            }
           }
         },
         {
@@ -607,55 +649,61 @@
             },
             "annotations": {
               "readOnlyHint": false,
-              "destructiveHint": false,
-              "idempotentHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "local-draft",
-          "expectedAuthority": "closed-world-change",
-          "allowedEffects": {
-            "domain": [
-              "pending-next-action"
-            ],
-            "ui": [
-              "next-editor",
-              "preparation-receipt",
-              "focus"
-            ],
-            "durable": [
-              "browser-local-pending-next-action"
-            ],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [
-              "focus.focused",
-              "focus.focusVisible",
-              "focus.inViewport",
-              "focus.pulsed"
-            ],
-            "denominatorPaths": [],
-            "humanGateTruePaths": [
-              "next.preparationReceipt.requiresHumanSave"
-            ]
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "changed",
-              "focus",
-              "next"
-            ],
-            "focusFields": [
-              "id",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
-            ],
-            "allowNull": false
+          "discoveryClassification": "change-unknown",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "destructiveHint": false,
+              "idempotentHint": true,
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "closed-world-change",
+            "effect": "local-draft",
+            "allowedEffects": {
+              "domain": [
+                "pending-next-action"
+              ],
+              "ui": [
+                "next-editor",
+                "preparation-receipt",
+                "focus"
+              ],
+              "durable": [
+                "browser-local-pending-next-action"
+              ],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [
+                "focus.focused",
+                "focus.focusVisible",
+                "focus.inViewport",
+                "focus.pulsed"
+              ],
+              "denominatorPaths": [],
+              "humanGateTruePaths": [
+                "next.preparationReceipt.requiresHumanSave"
+              ]
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "changed",
+                "focus",
+                "next"
+              ],
+              "focusFields": [
+                "id",
+                "focused",
+                "focusVisible",
+                "inViewport",
+                "pulsed"
+              ],
+              "allowNull": false
+            }
           }
         }
       ]
@@ -675,33 +723,39 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "reader",
-          "expectedAuthority": "read-only",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [],
-            "denominatorPaths": [],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "id",
-              "title",
-              "href",
-              "reason"
-            ],
-            "focusFields": [],
-            "allowNull": true
+          "discoveryClassification": "read-only-hint",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "read-only",
+            "effect": "reader",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [],
+              "denominatorPaths": [],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "id",
+                "title",
+                "href",
+                "reason"
+              ],
+              "focusFields": [],
+              "allowNull": true
+            }
           }
         }
       ]

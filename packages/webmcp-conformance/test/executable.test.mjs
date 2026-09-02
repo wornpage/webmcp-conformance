@@ -27,7 +27,7 @@ const evidence = {
 };
 
 const manifest = {
-  version: 2,
+  version: 3,
   id: 'fixture-app',
   title: 'Fixture app',
   source: { kind: 'local-git', revision: '0123456789abcdef0123456789abcdef01234567', paths: ['fixture.mjs'] },
@@ -35,15 +35,20 @@ const manifest = {
   pages: [{
     path: '/',
     tools: [{
-      descriptor,
-      declaredEffect: 'presentation',
-      expectedAuthority: 'closed-world-change',
-      allowedEffects: { domain: [], ui: ['view', 'focus'], durable: [], network: [], humanActivations: [] },
-      evidence,
-      receiptAllowlist: {
-        resultFields: ['view', 'focus', 'counts'],
-        focusFields: ['focused', 'focusVisible', 'inViewport', 'pulsed'],
-        allowNull: false,
+      descriptor: { ...descriptor, annotations: { readOnlyHint: false } },
+      discoveryClassification: 'change-unknown',
+      projectPolicy: {
+        nonstandardAnnotations: { destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        inputSchemaProfile: 'closed-bounded-v1',
+        ceiling: 'closed-world-change',
+        effect: 'presentation',
+        allowedEffects: { domain: [], ui: ['view', 'focus'], durable: [], network: [], humanActivations: [] },
+        evidence,
+        receiptAllowlist: {
+          resultFields: ['view', 'focus', 'counts'],
+          focusFields: ['focused', 'focusVisible', 'inViewport', 'pulsed'],
+          allowNull: false,
+        },
       },
     }],
   }],
@@ -93,7 +98,10 @@ test('global preflight rejects a later incomplete adapter before an earlier tool
   const firstTool = fixtureTool(() => { executions += 1; });
   const secondDescriptor = { ...descriptor, name: 'second_fixture', title: 'Second fixture' };
   const twoToolManifest = structuredClone(manifest);
-  twoToolManifest.pages[0].tools.push({ ...structuredClone(manifest.pages[0].tools[0]), descriptor: secondDescriptor });
+  twoToolManifest.pages[0].tools.push({
+    ...structuredClone(manifest.pages[0].tools[0]),
+    descriptor: { ...secondDescriptor, annotations: { readOnlyHint: false } },
+  });
   await assert.rejects(() => runExecutableCatalogFixture(twoToolManifest, {
     tools: {
       show_fixture: { tool: firstTool, cases: fixtureCases() },
@@ -116,7 +124,7 @@ test('evidence obligations reject false or missing focus and gate proofs plus in
 });
 
 test('receipt allowlists reject undeclared top-level and focus fields', () => {
-  const allowlist = manifest.pages[0].tools[0].receiptAllowlist;
+  const allowlist = manifest.pages[0].tools[0].projectPolicy.receiptAllowlist;
   assert.throws(() => assertReceiptAllowlist({ ...fixtureResult(), secret: 'no' }, allowlist), /fields must be exactly/u);
   assert.throws(() => assertReceiptAllowlist({ ...fixtureResult(), focus: { ...fixtureResult().focus, secret: 'no' } }, allowlist), /focus receipt fields/u);
 });

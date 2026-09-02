@@ -1,0 +1,25 @@
+{
+  "name": "@webmcp-conformance/webmcp-discovery-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fail-closed in-page host for the current WebMCP discovery and execution draft.",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "dependencies": {
+    "webmcp-conformance": "0.1.0"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/index.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

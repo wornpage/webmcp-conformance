@@ -1,5 +1,5 @@
-import { classifyAuthority } from './authority.mjs';
-import { validateToolDescriptor } from './descriptor.mjs';
+import { validateClosedInputSchema, validateWebMcpDescriptor } from './descriptor.mjs';
+import { classifyProjectPolicyCeiling, classifyWebMcpDiscoveryHint, validateProjectPolicyDeclarations } from './policy.mjs';
 
 const IDENTIFIER = /^[a-z0-9][a-z0-9-]{0,79}$/u;
 const REVISION = /^[0-9a-f]{40}$/u;
@@ -20,7 +20,7 @@ export function validateCatalogManifest(manifest) {
     add('$', 'manifest.type', 'Catalog manifest must be an object.');
     return { valid: false, issues };
   }
-  if (manifest.version !== 2) add('$.version', 'manifest.version', 'Manifest version must be 2.');
+  if (manifest.version !== 3) add('$.version', 'manifest.version', 'Manifest version must be 3.');
   validateIdentifier(manifest.id, '$.id', add);
   validateText(manifest.title, '$.title', add);
   validateSource(manifest.source, add);
@@ -75,21 +75,57 @@ function validateManifestTool(tool, path, add) {
     add(path, 'tool.type', 'Tool entry must be an object.');
     return;
   }
-  const descriptorResult = validateToolDescriptor(tool.descriptor);
-  for (const issue of descriptorResult.issues) add(`${path}.descriptor${issue.path.slice(1)}`, issue.code, issue.message);
-  if (!DECLARED_EFFECTS.has(tool.declaredEffect)) add(`${path}.declaredEffect`, 'tool.effect', 'declaredEffect is not supported.');
-  if (!AUTHORITIES.has(tool.expectedAuthority)) add(`${path}.expectedAuthority`, 'tool.authority', 'expectedAuthority is not supported.');
-  if (descriptorResult.valid) {
-    const { authority } = classifyAuthority(tool.descriptor);
-    if (tool.expectedAuthority !== authority) {
-      add(`${path}.expectedAuthority`, 'tool.authority_mismatch', `Expected authority must match descriptor classification ${authority}.`);
-    }
-    validateEffectCompatibility(tool.declaredEffect, authority, `${path}.declaredEffect`, add);
+  if (!sameStrings(Object.keys(tool), ['descriptor', 'discoveryClassification', 'projectPolicy'])) {
+    add(path, 'tool.keys', 'Manifest tools must contain descriptor, discoveryClassification, and projectPolicy only.');
   }
-  validateAllowedEffects(tool.allowedEffects, `${path}.allowedEffects`, tool.declaredEffect, add);
-  validateReceiptAllowlist(tool.receiptAllowlist, `${path}.receiptAllowlist`, add);
-  validateEvidence(tool.evidence, `${path}.evidence`, tool.receiptAllowlist, tool.declaredEffect, add);
-  if (tool.knownGaps !== undefined) validateKnownGaps(tool.knownGaps, `${path}.knownGaps`, add);
+  const descriptorResult = validateWebMcpDescriptor(tool.descriptor);
+  for (const issue of descriptorResult.issues) add(`${path}.descriptor${issue.path.slice(1)}`, issue.code, issue.message);
+  if (descriptorResult.valid) {
+    const discoveryClassification = classifyWebMcpDiscoveryHint(tool.descriptor);
+    if (tool.discoveryClassification !== discoveryClassification) {
+      add(`${path}.discoveryClassification`, 'tool.discovery_mismatch', `Discovery classification must be ${discoveryClassification}.`);
+    }
+  } else if (!['read-only-hint', 'change-unknown'].includes(tool.discoveryClassification)) {
+    add(`${path}.discoveryClassification`, 'tool.discovery', 'Discovery classification is not supported.');
+  }
+  validateProjectPolicy(tool.projectPolicy, `${path}.projectPolicy`, tool.descriptor, descriptorResult.valid, add);
+}
+
+function validateProjectPolicy(policy, path, descriptor, descriptorValid, add) {
+  if (!isRecord(policy)) {
+    add(path, 'project_policy.type', 'projectPolicy must be an object.');
+    return;
+  }
+  const requiredKeys = ['nonstandardAnnotations', 'inputSchemaProfile', 'ceiling', 'effect', 'allowedEffects', 'evidence', 'receiptAllowlist'];
+  const allowedKeys = [...requiredKeys, 'knownGaps'];
+  if (requiredKeys.some((key) => !Object.hasOwn(policy, key)) || Object.keys(policy).some((key) => !allowedKeys.includes(key))) {
+    add(path, 'project_policy.keys', 'projectPolicy contains missing or unsupported fields.');
+  }
+  let declarationsValid = false;
+  if (descriptorValid) {
+    const declarationsResult = validateProjectPolicyDeclarations(descriptor, policy.nonstandardAnnotations);
+    declarationsValid = declarationsResult.valid;
+    for (const issue of declarationsResult.issues) add(`${path}.nonstandardAnnotations${issue.path.slice(1)}`, issue.code, issue.message);
+  } else if (!isRecord(policy.nonstandardAnnotations)) {
+    add(`${path}.nonstandardAnnotations`, 'project_policy.annotations', 'nonstandardAnnotations must be an object.');
+  }
+  if (policy.inputSchemaProfile !== 'closed-bounded-v1') add(`${path}.inputSchemaProfile`, 'project_policy.input_schema_profile', 'Project policy inputSchemaProfile must be closed-bounded-v1.');
+  if (descriptorValid && policy.inputSchemaProfile === 'closed-bounded-v1') {
+    const schema = descriptor.inputSchema ?? { type: 'object', properties: {}, additionalProperties: false };
+    const schemaResult = validateClosedInputSchema(schema);
+    for (const issue of schemaResult.issues) add(`${path}.inputSchemaProfile${issue.path.slice(1)}`, issue.code, issue.message);
+  }
+  if (!DECLARED_EFFECTS.has(policy.effect)) add(`${path}.effect`, 'project_policy.effect', 'Project policy effect is not supported.');
+  if (!AUTHORITIES.has(policy.ceiling)) add(`${path}.ceiling`, 'project_policy.ceiling', 'Project policy ceiling is not supported.');
+  if (descriptorValid && declarationsValid) {
+    const ceiling = classifyProjectPolicyCeiling(descriptor, policy.nonstandardAnnotations);
+    if (policy.ceiling !== ceiling) add(`${path}.ceiling`, 'project_policy.ceiling_mismatch', `Project policy ceiling must be ${ceiling}.`);
+    validateEffectCompatibility(policy.effect, ceiling, `${path}.effect`, add);
+  }
+  validateAllowedEffects(policy.allowedEffects, `${path}.allowedEffects`, policy.effect, add);
+  validateReceiptAllowlist(policy.receiptAllowlist, `${path}.receiptAllowlist`, add);
+  validateEvidence(policy.evidence, `${path}.evidence`, policy.receiptAllowlist, policy.effect, add);
+  if (policy.knownGaps !== undefined) validateKnownGaps(policy.knownGaps, `${path}.knownGaps`, add);
 }
 
 function validateEffectCompatibility(effect, authority, path, add) {
@@ -123,7 +159,7 @@ function validateAllowedEffects(value, path, effect, add) {
   }
 }
 
-function validateEvidence(value, path, receiptAllowlist, declaredEffect, add) {
+function validateEvidence(value, path, receiptAllowlist, projectPolicyEffect, add) {
   if (!isRecord(value)) {
     add(path, 'evidence.type', 'evidence must be an object.');
     return;
@@ -138,7 +174,7 @@ function validateEvidence(value, path, receiptAllowlist, declaredEffect, add) {
   if (!isRecord(receiptAllowlist) || !Array.isArray(receiptAllowlist.resultFields) || !Array.isArray(receiptAllowlist.focusFields)) return;
 
   const receiptHasFocus = receiptAllowlist.resultFields.includes('focus') || receiptAllowlist.focusFields.length > 0;
-  const requiresVisibleFocus = declaredEffect === 'presentation' || declaredEffect === 'local-draft';
+  const requiresVisibleFocus = projectPolicyEffect === 'presentation' || projectPolicyEffect === 'local-draft';
   if (valid.focusTruePaths) {
     if (requiresVisibleFocus && !sameStrings(value.focusTruePaths, FOCUS_PROOF_PATHS)) {
       add(`${path}.focusTruePaths`, 'evidence.focus_proof', 'Focus evidence must declare focused, focusVisible, inViewport, and pulsed as full result-relative paths.');
@@ -167,11 +203,11 @@ function validateEvidence(value, path, receiptAllowlist, declaredEffect, add) {
       const field = resultPath.split('.').at(-1);
       if (!HUMAN_GATE_FIELD.test(field)) add(`${path}.humanGateTruePaths`, 'evidence.human_gate_path', `${resultPath} is not an explicit requiresHuman gate field.`);
     }
-    if (declaredEffect === 'local-draft' && value.humanGateTruePaths.length === 0) {
+    if (projectPolicyEffect === 'local-draft' && value.humanGateTruePaths.length === 0) {
       add(`${path}.humanGateTruePaths`, 'evidence.human_gate', 'Local-draft tools must declare at least one true human-gate proof path.');
     }
-    if ((declaredEffect === 'reader' || declaredEffect === 'presentation') && value.humanGateTruePaths.length > 0) {
-      add(`${path}.humanGateTruePaths`, 'evidence.human_gate_scope', `${declaredEffect} tools cannot declare human-gate proof paths.`);
+    if ((projectPolicyEffect === 'reader' || projectPolicyEffect === 'presentation') && value.humanGateTruePaths.length > 0) {
+      add(`${path}.humanGateTruePaths`, 'evidence.human_gate_scope', `${projectPolicyEffect} tools cannot declare human-gate proof paths.`);
     }
   }
   if (valid.focusTruePaths && valid.denominatorPaths && valid.humanGateTruePaths) {

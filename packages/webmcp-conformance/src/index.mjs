@@ -1,10 +1,21 @@
 export {
-  DescriptorValidationError,
-  assertValidToolDescriptor,
-  snapshotToolDescriptor,
-  validateToolDescriptor,
+  InputSchemaValidationError,
+  WebMcpDescriptorValidationError,
+  assertClosedInputSchema,
+  assertInputAgainstClosedSchema,
+  assertValidWebMcpDescriptor,
+  snapshotPageToolContract,
+  validateClosedInputSchema,
+  validateInputAgainstClosedSchema,
+  validateWebMcpDescriptor,
 } from './descriptor.mjs';
-export { classifyAuthority } from './authority.mjs';
+export {
+  ProjectPolicyValidationError,
+  assertValidProjectPolicyDeclarations,
+  classifyProjectPolicyCeiling,
+  classifyWebMcpDiscoveryHint,
+  validateProjectPolicyDeclarations,
+} from './policy.mjs';
 export {
   ManifestValidationError,
   assertValidCatalogManifest,

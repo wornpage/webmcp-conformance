@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { assertValidCatalogManifest } from './manifest.mjs';
-import { snapshotToolDescriptor } from './descriptor.mjs';
+import { snapshotPageToolContract } from './descriptor.mjs';
 
 /**
  * Verify runtime descriptors against a frozen manifest and execute deterministic
@@ -24,8 +24,11 @@ export async function runExecutableCatalogFixture(manifest, adapter) {
         throw new TypeError(`Executable fixture is missing runtime cases for ${name}.`);
       }
       validateRuntimeCases(runtime.cases, name);
-      const actualDescriptor = snapshotToolDescriptor(runtime.tool);
-      if (!isDeepStrictEqual(actualDescriptor, entry.descriptor)) throw new TypeError(`Runtime descriptor drifted from manifest for ${name}.`);
+      const actualContract = snapshotPageToolContract(runtime.tool);
+      if (!isDeepStrictEqual(actualContract.descriptor, entry.descriptor)) throw new TypeError(`Runtime standard descriptor drifted from manifest for ${name}.`);
+      if (!isDeepStrictEqual(actualContract.nonstandardAnnotations, entry.projectPolicy.nonstandardAnnotations)) {
+        throw new TypeError(`Runtime project-policy annotations drifted from manifest for ${name}.`);
+      }
       plans.push({ entry, name, runtime });
     }
   }
@@ -37,8 +40,8 @@ export async function runExecutableCatalogFixture(manifest, adapter) {
         const input = structuredClone(testCase.input);
         if (testCase.expect === 'success') {
           const result = await runtime.tool.execute(input);
-          assertReceiptAllowlist(result, entry.receiptAllowlist, name);
-          assertEvidenceObligations(result, entry.evidence, name);
+          assertReceiptAllowlist(result, entry.projectPolicy.receiptAllowlist, name);
+          assertEvidenceObligations(result, entry.projectPolicy.evidence, name);
           await testCase.assert?.(result);
           results.push({ tool: name, case: testCase.name, outcome: 'success' });
           continue;

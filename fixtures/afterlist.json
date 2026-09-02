@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "id": "afterlist",
   "title": "Afterlist",
   "source": {
@@ -33,38 +33,44 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": false,
               "untrustedContentHint": true
             }
           },
-          "declaredEffect": "reader",
-          "expectedAuthority": "read-only",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [],
-            "denominatorPaths": [
-              "counts.sources",
-              "counts.tracks",
-              "counts.triaged",
-              "counts.untriaged",
-              "counts.destinations",
-              "counts.needsReview"
-            ],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "view",
-              "counts"
-            ],
-            "focusFields": [],
-            "allowNull": false
+          "discoveryClassification": "read-only-hint",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
+              "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "read-only",
+            "effect": "reader",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [],
+              "denominatorPaths": [
+                "counts.sources",
+                "counts.tracks",
+                "counts.triaged",
+                "counts.untriaged",
+                "counts.destinations",
+                "counts.needsReview"
+              ],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "view",
+                "counts"
+              ],
+              "focusFields": [],
+              "allowNull": false
+            }
           }
         },
         {
@@ -92,48 +98,54 @@
               "additionalProperties": false
             },
             "annotations": {
-              "readOnlyHint": false,
+              "readOnlyHint": false
+            }
+          },
+          "discoveryClassification": "change-unknown",
+          "projectPolicy": {
+            "nonstandardAnnotations": {
               "destructiveHint": false,
               "idempotentHint": true,
               "openWorldHint": false
+            },
+            "inputSchemaProfile": "closed-bounded-v1",
+            "ceiling": "closed-world-change",
+            "effect": "presentation",
+            "allowedEffects": {
+              "domain": [],
+              "ui": [
+                "view",
+                "focus"
+              ],
+              "durable": [],
+              "network": [],
+              "humanActivations": []
+            },
+            "evidence": {
+              "focusTruePaths": [
+                "focus.focused",
+                "focus.focusVisible",
+                "focus.inViewport",
+                "focus.pulsed"
+              ],
+              "denominatorPaths": [],
+              "humanGateTruePaths": []
+            },
+            "receiptAllowlist": {
+              "resultFields": [
+                "view",
+                "changed",
+                "focus"
+              ],
+              "focusFields": [
+                "target",
+                "focused",
+                "focusVisible",
+                "inViewport",
+                "pulsed"
+              ],
+              "allowNull": false
             }
-          },
-          "declaredEffect": "presentation",
-          "expectedAuthority": "closed-world-change",
-          "allowedEffects": {
-            "domain": [],
-            "ui": [
-              "view",
-              "focus"
-            ],
-            "durable": [],
-            "network": [],
-            "humanActivations": []
-          },
-          "evidence": {
-            "focusTruePaths": [
-              "focus.focused",
-              "focus.focusVisible",
-              "focus.inViewport",
-              "focus.pulsed"
-            ],
-            "denominatorPaths": [],
-            "humanGateTruePaths": []
-          },
-          "receiptAllowlist": {
-            "resultFields": [
-              "view",
-              "changed",
-              "focus"
-            ],
-            "focusFields": [
-              "target",
-              "focused",
-              "focusVisible",
-              "inViewport",
-              "pulsed"
-            ],
-            "allowNull": false
           }
         }
       ]

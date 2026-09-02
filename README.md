@@ -5,6 +5,7 @@ Framework-neutral conformance tools and fixtures for page-owned WebMCP catalogs.
 | Package | Responsibility |
 |---|---|
 | [`webmcp-conformance`](packages/webmcp-conformance/README.md) | Descriptor validation, authority ceilings, manifest and receipt contracts, lifecycle fixtures, and catalog reports |
+| [`webmcp-discovery-host`](packages/webmcp-discovery-host/README.md) | Fail-closed prototype for the current draft's in-page discovery and execution APIs |
 | [`wornpage-consumer-check`](packages/wornpage-consumer-check/README.md) | Independent Wornpage package-delivery checks for consumer applications |
 
 The packages are intentionally independent. Descriptor conformance does not

@@ -1,4 +1,3 @@
-import { classifyAuthority } from './authority.mjs';
 import { assertValidCatalogManifest } from './manifest.mjs';
 
 /** @param {unknown[]} manifests */
@@ -6,20 +5,22 @@ export function buildCatalogReport(manifests) {
   if (!Array.isArray(manifests) || manifests.length === 0) throw new TypeError('At least one catalog manifest is required.');
   manifests.forEach(assertValidCatalogManifest);
   const rows = manifests.flatMap((manifest) => manifest.pages.flatMap((page) => page.tools.map((tool) => {
-    const classification = classifyAuthority(tool.descriptor);
+    const declarations = tool.projectPolicy.nonstandardAnnotations;
     return {
       catalog: manifest.id,
       page: page.path,
       tool: tool.descriptor.name,
       title: tool.descriptor.title,
-      declaredEffect: tool.declaredEffect,
-      authority: classification.authority,
-      idempotent: classification.idempotent,
-      openWorld: classification.canReachOpenWorld,
-      destructive: classification.canDestroy,
-      untrustedContent: classification.untrustedContent,
-      requiredInputs: Array.isArray(tool.descriptor.inputSchema.required) ? [...tool.descriptor.inputSchema.required] : [],
-      knownGaps: tool.knownGaps ? tool.knownGaps.map((gap) => ({ ...gap })) : [],
+      discoveryClassification: tool.discoveryClassification,
+      projectPolicyCeiling: tool.projectPolicy.ceiling,
+      projectPolicyEffect: tool.projectPolicy.effect,
+      projectPolicyInputSchemaProfile: tool.projectPolicy.inputSchemaProfile,
+      projectPolicyIdempotent: typeof declarations.idempotentHint === 'boolean' ? declarations.idempotentHint : null,
+      projectPolicyOpenWorld: declarations.openWorldHint === true,
+      projectPolicyDestructive: declarations.destructiveHint === true,
+      declaredUntrustedContent: tool.descriptor.annotations?.untrustedContentHint === true,
+      requiredInputs: Array.isArray(tool.descriptor.inputSchema?.required) ? [...tool.descriptor.inputSchema.required] : [],
+      knownGaps: tool.projectPolicy.knownGaps ? tool.projectPolicy.knownGaps.map((gap) => ({ ...gap })) : [],
     };
   }))).sort(compareRows);
 
@@ -29,8 +30,10 @@ export function buildCatalogReport(manifests) {
       pages: manifests.reduce((total, manifest) => total + manifest.pages.length, 0),
       tools: rows.length,
       knownGaps: rows.reduce((total, row) => total + row.knownGaps.length, 0),
-      byAuthority: countBy(rows, 'authority'),
-      byDeclaredEffect: countBy(rows, 'declaredEffect'),
+      byDiscoveryClassification: countBy(rows, 'discoveryClassification'),
+      byProjectPolicyCeiling: countBy(rows, 'projectPolicyCeiling'),
+      byProjectPolicyEffect: countBy(rows, 'projectPolicyEffect'),
+      byProjectPolicyInputSchemaProfile: countBy(rows, 'projectPolicyInputSchemaProfile'),
     },
     rows,
   };
@@ -39,11 +42,11 @@ export function buildCatalogReport(manifests) {
 /** @param {ReturnType<typeof buildCatalogReport>} report */
 export function formatCatalogMarkdown(report) {
   const lines = [
-    '| Catalog | Page | Tool | Declared effect | Authority ceiling | Idempotent | Gaps |',
-    '|---|---|---|---|---|---:|---:|',
+    '| Catalog | Page | Tool | Discovery classification | Project-policy effect | Input-schema profile | Project-policy ceiling | Gaps |',
+    '|---|---|---|---|---|---|---|---:|',
   ];
   for (const row of report.rows) {
-    lines.push(`| ${cell(row.catalog)} | ${cell(row.page)} | ${cell(row.tool)} | ${cell(row.declaredEffect)} | ${cell(row.authority)} | ${row.idempotent === null ? 'n/a' : row.idempotent} | ${row.knownGaps.length} |`);
+    lines.push(`| ${cell(row.catalog)} | ${cell(row.page)} | ${cell(row.tool)} | ${cell(row.discoveryClassification)} | ${cell(row.projectPolicyEffect)} | ${cell(row.projectPolicyInputSchemaProfile)} | ${cell(row.projectPolicyCeiling)} | ${row.knownGaps.length} |`);
   }
   lines.push('', `${report.summary.catalogs} catalogs · ${report.summary.pages} pages · ${report.summary.tools} tools · ${report.summary.knownGaps} acknowledged gaps`);
   return `${lines.join('\n')}\n`;
