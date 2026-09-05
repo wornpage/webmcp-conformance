@@ -1,6 +1,8 @@
 # WebMCP conformance workspace
 
-Framework-neutral conformance tools and fixtures for page-owned WebMCP catalogs.
+Check what a page-owned tool advertises, which actions it is allowed to perform, and whether its receipts match the contract.
+
+This workspace provides framework-neutral WebMCP descriptor validation, authority ceilings, lifecycle fixtures, and catalog reports. It also includes a guarded discovery prototype and independent component-delivery checks. It demonstrates executable contract testing for browser-agent integrations; it is not an official certification suite.
 
 | Package | Responsibility |
 |---|---|
