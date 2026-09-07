@@ -6,7 +6,7 @@ The validation toolkit in [Wornpage](https://github.com/wornpage/wornpage), a se
 of interfaces and tools that keep people in control of agent-assisted work.
 Use this repository for executable browser-tool contracts; use
 [Projects](https://projects-webmcp-extension.pages.dev/webmcp-challenge) to see
-the application, [Components](https://wornpage.pages.dev) for the interface
+the application, [Components](https://wornpage-components.pages.dev) for the interface
 library, and [PR Machine](https://github.com/wornpage/projects-pr-machine) for
 delivering reviewed code as draft pull requests.
 

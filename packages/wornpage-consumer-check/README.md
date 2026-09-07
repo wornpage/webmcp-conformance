@@ -9,11 +9,13 @@ layout: give it the consumer root and, when needed, a different source folder.
 
 For every declared `@wornpage/*` runtime dependency, the checker verifies:
 
-- `package.json` uses an exact
-  `https://codeload.github.com/wornpage/<repo>/tar.gz/<40-char-commit>` pin;
+- `package.json` uses a named component release at
+  `https://github.com/wornpage/wornpage/releases/download/components-YYYY.MM.DD/wornpage-<name>-<version>.tgz`,
+  a historical transport asset named `wornpage-<name>-<40-char-commit>.tar.gz`
+  in that release, or a retained `codeload.github.com/wornpage/<repo>/tar.gz/<40-char-commit>` source archive;
 - `package-lock.json` repeats that declaration, resolves the same archive and
-  commit, and records a real SHA-512 integrity digest;
-- installed npm metadata resolves the same commit without a nested Wornpage
+  revision, and records a real SHA-512 integrity digest;
+- installed npm metadata resolves the same archive and source commit or release tag/version without a nested Wornpage
   revision;
 - the installed package exposes existing canonical Svelte source and runtime
   entries under `src/` or `dist/`, declares the Wornpage v2 delivery contract,
@@ -25,6 +27,13 @@ For every declared `@wornpage/*` runtime dependency, the checker verifies:
 
 The gate does not contact GitHub, install dependencies, repair locks, or rewrite
 the consumer. Run the consumer's locked install before checking it.
+
+For release packages, the installed package version must match the archive
+filename. JSON reports retain `commit` for historical source archives and use
+an explicit `release` record for tag/version identity; a release tag is never
+reported as a Git commit. This offline gate validates declarations and installed
+metadata. Release immutability and GitHub attestations are verified by the
+publisher separately.
 
 ## CLI
 

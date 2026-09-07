@@ -15,6 +15,80 @@ async function fixture(t) {
   return root;
 }
 
+async function useArchive(root, specifier) {
+  const manifestPath = path.join(root, 'package.json');
+  const manifest = await readJson(manifestPath);
+  manifest.dependencies[PACKAGE_NAME] = specifier;
+  await writeJson(manifestPath, manifest);
+  for (const file of ['package-lock.json', path.join('node_modules', '.package-lock.json')]) {
+    const target = path.join(root, file);
+    const lock = await readJson(target);
+    lock.packages[''].dependencies[PACKAGE_NAME] = specifier;
+    lock.packages[`node_modules/${PACKAGE_NAME}`].resolved = specifier;
+    await writeJson(target, lock);
+  }
+}
+
+void test('preserves full source identity for consolidated historical transport archives', async (t) => {
+  const root = await fixture(t);
+  await useArchive(root, `https://github.com/wornpage/wornpage/releases/download/components-2026.09.07/wornpage-button-${COMMIT}.tar.gz`);
+  const report = await assertWornpageConsumer({ root });
+  assert.equal(report.packages[0].commit, COMMIT);
+  assert.equal(report.packages[0].lockResolved, COMMIT);
+  assert.equal(report.packages[0].installedResolved, COMMIT);
+});
+
+void test('records release tags and versions without pretending they are source commits', async (t) => {
+  const root = await fixture(t);
+  await useArchive(root, 'https://github.com/wornpage/wornpage/releases/download/components-2026.09.07/wornpage-button-0.0.0.tgz');
+  const report = await assertWornpageConsumer({ root });
+  assert.equal(report.packages[0].commit, null);
+  assert.deepEqual(report.packages[0].release, {
+    tag: 'components-2026.09.07', version: '0.0.0', lockTag: 'components-2026.09.07', lockVersion: '0.0.0', installedTag: 'components-2026.09.07', installedVersion: '0.0.0',
+  });
+  let output = '';
+  assert.equal(await runCli([root, '--verbose'], { stdout: { write(value) { output += value; } } }), 0);
+  assert.match(output, /components-2026\.09\.07@0\.0\.0/u);
+});
+
+void test('rejects release drift and a package version that differs from its asset', async (t) => {
+  const root = await fixture(t);
+  await useArchive(root, 'https://github.com/wornpage/wornpage/releases/download/components-2026.09.07/wornpage-button-0.0.0.tgz');
+  const lockPath = path.join(root, 'package-lock.json');
+  const lock = await readJson(lockPath);
+  lock.packages[`node_modules/${PACKAGE_NAME}`].resolved = lock.packages[`node_modules/${PACKAGE_NAME}`].resolved.replace('2026.09.07', '2026.09.08');
+  await writeJson(lockPath, lock);
+  const pkgPath = path.join(root, 'node_modules', '@wornpage', 'button', 'package.json');
+  const pkg = await readJson(pkgPath);
+  pkg.version = '0.0.1';
+  await writeJson(pkgPath, pkg);
+  const report = await inspectWornpageConsumer({ root });
+  assert.deepEqual(new Set(report.issues.map(issue => issue.code)), new Set(['lock_release_mismatch', 'installed_version_mismatch']));
+});
+
+void test('rejects mutable release aliases and archive/package name mismatches', async (t) => {
+  const root = await fixture(t);
+  for (const url of [
+    'https://github.com/wornpage/wornpage/releases/latest/download/wornpage-button-0.0.0.tgz',
+    'https://github.com/wornpage/wornpage/releases/download/components-2026.09.07/wornpage-alert-0.0.0.tgz',
+  ]) {
+    await useArchive(root, url);
+    const report = await inspectWornpageConsumer({ root });
+    assert.ok(report.issues.some(issue => issue.code === 'mutable_or_invalid_pin'));
+  }
+});
+
+void test('rejects an old installed transport even when its source commit matches', async (t) => {
+  const root = await fixture(t);
+  await useArchive(root, `https://github.com/wornpage/wornpage/releases/download/components-2026.09.07/wornpage-button-${COMMIT}.tar.gz`);
+  const installedPath = path.join(root, 'node_modules', '.package-lock.json');
+  const installed = await readJson(installedPath);
+  installed.packages[`node_modules/${PACKAGE_NAME}`].resolved = ARCHIVE;
+  await writeJson(installedPath, installed);
+  const report = await inspectWornpageConsumer({ root });
+  assert.deepEqual(report.issues.map(issue => issue.code), ['installed_archive_mismatch']);
+});
+
 void test('accepts one immutable, locked, installed, and directly imported Wornpage package', async (t) => {
   const root = await fixture(t);
   const report = await assertWornpageConsumer({ root });

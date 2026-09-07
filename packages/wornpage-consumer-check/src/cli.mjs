@@ -40,7 +40,8 @@ export async function runCli(args, io = {}) {
     stdout.write(`Verified ${report.packages.length} immutable @wornpage package${report.packages.length === 1 ? '' : 's'} from ${report.lockfile}.\n`);
     if (parsed.verbose) {
       for (const pkg of report.packages) {
-        stdout.write(`  ${pkg.name} #${pkg.commit.slice(0, 7)} v${pkg.contractVersion} ${pkg.delivery}: ${pkg.source} -> ${pkg.runtime}\n`);
+        const revision = pkg.release ? `${pkg.release.tag}@${pkg.release.version}` : `#${pkg.commit.slice(0, 7)}`;
+        stdout.write(`  ${pkg.name} ${revision} v${pkg.contractVersion} ${pkg.delivery}: ${pkg.source} -> ${pkg.runtime}\n`);
       }
     }
   }
