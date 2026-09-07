@@ -4,6 +4,8 @@ import path from 'node:path';
 
 const WORNPAGE_PREFIX = '@wornpage/';
 const ARCHIVE_PATTERN = /^https:\/\/codeload\.github\.com\/wornpage\/([a-z0-9][a-z0-9-]*)\/tar\.gz\/([0-9a-f]{40})$/u;
+const TRANSPORT_PATTERN = /^https:\/\/github\.com\/wornpage\/wornpage\/releases\/download\/(components-\d{4}\.\d{2}\.\d{2}(?:\.\d+)?)\/wornpage-([a-z0-9][a-z0-9-]*)-([0-9a-f]{40})\.tar\.gz$/u;
+const RELEASE_PATTERN = /^https:\/\/github\.com\/wornpage\/wornpage\/releases\/download\/(components-\d{4}\.\d{2}\.\d{2}(?:\.\d+)?)\/wornpage-([a-z0-9][a-z0-9-]*)-(\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?)\.tgz$/u;
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.mjs', '.mts', '.svelte', '.ts']);
 const CONTRACT_VERSION = 2;
 
@@ -101,6 +103,9 @@ export async function inspectWornpageConsumer(options = {}) {
     const installed = requireInstalled
       ? await inspectInstalledPackage(root, name, addIssue)
       : emptyInstalledReport();
+    if (requireInstalled && expected?.releaseTag && installed.version !== expected.version) {
+      addIssue('installed_version_mismatch', `${name} release archive declares ${expected.version}, but the installed package declares ${installed.version}.`, { packageName: name });
+    }
 
     packages.push({
       name,
@@ -108,6 +113,14 @@ export async function inspectWornpageConsumer(options = {}) {
       commit: expected?.commit ?? null,
       lockResolved: locked?.commit ?? null,
       installedResolved: installedResolution?.commit ?? null,
+      ...(expected?.releaseTag ? { release: {
+        tag: expected.releaseTag,
+        version: expected.version,
+        lockTag: locked?.releaseTag ?? null,
+        lockVersion: locked?.version ?? null,
+        installedTag: installedResolution?.releaseTag ?? null,
+        installedVersion: installedResolution?.version ?? null,
+      } } : {}),
       contractVersion: installed.contractVersion,
       delivery: installed.delivery,
       source: installed.source,
@@ -184,12 +197,12 @@ function packageRoot(specifier) {
 
 function archivePin(name, specifier, addIssue) {
   const repository = name.slice(WORNPAGE_PREFIX.length);
-  const match = String(specifier).match(ARCHIVE_PATTERN);
-  if (!match || match[1] !== repository) {
-    addIssue('mutable_or_invalid_pin', `${name} must use an immutable codeload.github.com/wornpage/${repository} archive URL with a full lowercase commit.`, { packageName: name });
+  const archive = archiveValue(specifier);
+  if (!archive || archive.repository !== repository) {
+    addIssue('mutable_or_invalid_pin', `${name} must use a named Wornpage component release or a historical source archive with its full lowercase commit.`, { packageName: name });
     return null;
   }
-  return { repository, commit: match[2], specifier };
+  return { ...archive, specifier };
 }
 
 function inspectLockEntry(name, specifier, lock, expected, addIssue) {
@@ -206,8 +219,10 @@ function inspectLockEntry(name, specifier, lock, expected, addIssue) {
   const resolved = archiveValue(entry.resolved);
   if (!resolved || (expected && resolved.repository !== expected.repository)) {
     addIssue('lock_resolution_invalid', `${name} has no exact matching Wornpage archive in package-lock.json.`, { packageName: name });
-  } else if (expected && resolved.commit !== expected.commit) {
-    addIssue('lock_commit_mismatch', `${name} package.json pins ${expected.commit}, but package-lock.json resolves ${resolved.commit}.`, { packageName: name });
+  } else if (expected && !sameRevision(resolved, expected)) {
+    addIssue(expected.releaseTag ? 'lock_release_mismatch' : 'lock_commit_mismatch', `${name} package.json and package-lock.json resolve different source revisions or releases.`, { packageName: name });
+  } else if (expected && entry.resolved !== specifier) {
+    addIssue('lock_archive_mismatch', `${name} lockfile uses a different archive transport than package.json.`, { packageName: name });
   }
   if (!validSha512Integrity(entry.integrity)) {
     addIssue('lock_integrity_invalid', `${name} package-lock.json entry must contain a valid SHA-512 integrity digest.`, { packageName: name });
@@ -223,8 +238,10 @@ function inspectInstalledResolution(name, installedLock, expected, addIssue) {
     addIssue('installed_resolution_invalid', `${name} has no exact matching archive metadata in node_modules/.package-lock.json.`, { packageName: name });
     return resolved;
   }
-  if (expected && resolved.commit !== expected.commit) {
-    addIssue('installed_commit_mismatch', `${name} installed revision ${resolved.commit} does not match package.json revision ${expected.commit}.`, { packageName: name });
+  if (expected && !sameRevision(resolved, expected)) {
+    addIssue(expected.releaseTag ? 'installed_release_mismatch' : 'installed_commit_mismatch', `${name} installed source revision or release does not match package.json.`, { packageName: name });
+  } else if (expected && entry.resolved !== expected.specifier) {
+    addIssue('installed_archive_mismatch', `${name} was installed from a different archive transport than package.json.`, { packageName: name });
   }
   return resolved;
 }
@@ -292,7 +309,7 @@ async function inspectInstalledPackage(root, name, addIssue) {
     }
   }
 
-  return { contractVersion, delivery, source, sourceAvailable, runtime, runtimeAvailable };
+  return { contractVersion, delivery, source, sourceAvailable, runtime, runtimeAvailable, version: manifest.version };
 }
 
 function rejectNestedDependencies(lock, label, addIssue) {
@@ -373,7 +390,15 @@ function resolveLocalImport(sourceRoot, importer, specifier) {
 
 function archiveValue(value) {
   const match = String(value ?? '').match(ARCHIVE_PATTERN);
-  return match ? { repository: match[1], commit: match[2] } : null;
+  if (match) return { repository: match[1], commit: match[2] };
+  const transport = String(value ?? '').match(TRANSPORT_PATTERN);
+  if (transport) return { repository: transport[2], commit: transport[3] };
+  const release = String(value ?? '').match(RELEASE_PATTERN);
+  return release ? { repository: release[2], commit: null, releaseTag: release[1], version: release[3] } : null;
+}
+
+function sameRevision(left, right) {
+  return left.commit === right.commit && left.releaseTag === right.releaseTag && left.version === right.version;
 }
 
 function validSha512Integrity(value) {
