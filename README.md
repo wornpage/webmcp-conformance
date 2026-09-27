@@ -2,12 +2,12 @@
 
 Check what a page-owned tool advertises, which actions it is allowed to perform, and whether its receipts match the contract.
 
-The validation toolkit in [Wornpage](https://github.com/wornpage/wornpage), a set
+The validation toolkit in [Wornpage](https://github.com/wornpage/components), a set
 of interfaces and tools that keep people in control of agent-assisted work.
 Use this repository for executable browser-tool contracts; use
 [Projects](https://projects-webmcp-extension.pages.dev/webmcp-challenge) to see
 the application, [Components](https://wornpage-components.pages.dev) for the interface
-library, and [PR Machine](https://github.com/wornpage/projects-pr-machine) for
+library, and [PR runner](https://github.com/wornpage/pr-runner) for
 delivering reviewed code as draft pull requests.
 
 This workspace provides framework-neutral WebMCP descriptor validation, authority ceilings, lifecycle fixtures, and catalog reports. It also includes a guarded discovery prototype and independent component-delivery checks. It demonstrates executable contract testing for browser-agent integrations; it is not an official certification suite.
